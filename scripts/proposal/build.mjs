@@ -1,421 +1,408 @@
-// Builds the client proposal (letter-size PDF) from the captured screenshots, in Hadeed Motors' own
-// palette and fonts. Usage: npm run proposal (or node scripts/proposal/build.mjs after a capture).
+// Builds the client proposal (letter-size PDF) from the captured screenshots, in the site's own
+// molasses-and-amber palette and fonts. Usage: npm run proposal  (capture first; this step only needs Chrome)
 import puppeteer from 'puppeteer-core';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const CHROME = process.env.CHROME_PATH ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-const ROOT = path.resolve('.');
 const SHOTS = path.resolve('dist/proposal/shots');
 const chunks = JSON.parse(fs.readFileSync(path.join(SHOTS, 'chunks.json'), 'utf8'));
 const OUT_HTML = path.resolve('dist/proposal/proposal.html');
-const OUT_PDF = path.resolve('dist/proposal/Hadeed-Motors-Website-Proposal.pdf');
+const OUT_PDF = path.resolve('dist/proposal/Grenada-Distillers-Website-Proposal.pdf');
 const DATE = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-const TESTS = process.env.TEST_COUNT ?? '65';
+const TITLE = "Clarke's Court – Website Proposal for Grenada Distillers";
 const img = (f) => 'file://' + f;
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
-// The site's self-hosted fonts (built by the Vite fonts plugin into public/build/assets).
-const ASSETS = path.join(ROOT, 'public/build/assets');
+// Self-hosted site fonts (built by Vite into public/build/assets).
+const ASSETS = path.resolve('public/build/assets');
 const font = (prefix) => {
   const f = fs.readdirSync(ASSETS).find((n) => n.startsWith(prefix) && n.endsWith('.woff2'));
-  if (!f) throw new Error(`Font ${prefix} not found in public/build/assets; run npm run build first.`);
+  if (!f) throw new Error(`Font ${prefix} not found: run npm run build first`);
   return 'file://' + path.join(ASSETS, f);
 };
 const FONTS = [
-  ['Unbounded', 500, 'unbounded-500-normal'], ['Unbounded', 700, 'unbounded-700-normal'],
-  ['Hanken Grotesk', 400, 'hanken-grotesk-400-normal'], ['Hanken Grotesk', 500, 'hanken-grotesk-500-normal'],
-  ['Hanken Grotesk', 600, 'hanken-grotesk-600-normal'], ['Hanken Grotesk', 700, 'hanken-grotesk-700-normal'],
-].map(([fam, w, p]) => `@font-face { font-family: "${fam}"; font-weight: ${w}; font-style: normal; src: url("${font(p)}") format("woff2"); }`).join('\n');
+  ['DM Serif Display', 400, 'normal', 'dm-serif-display-400-normal'], ['DM Serif Display', 400, 'italic', 'dm-serif-display-400-italic'],
+  ['Source Sans 3', 400, 'normal', 'source-sans-3-400-normal'], ['Source Sans 3', 600, 'normal', 'source-sans-3-600-normal'],
+  ['Source Sans 3', 700, 'normal', 'source-sans-3-700-normal'], ['Source Sans 3', 400, 'italic', 'source-sans-3-400-italic'],
+].map(([fam, w, st, p]) => `@font-face { font-family: '${fam}'; font-weight: ${w}; font-style: ${st}; src: url('${font(p)}') format('woff2'); }`).join('\n');
 
-// Hadeed Motors' own HM mark (the file hadeedmotors.com uses, kept in public/img/brand), on the
-// same white plate the site puts it on.
-const LOGO = 'data:image/png;base64,' + fs.readFileSync(path.join(ROOT, 'public/img/brand/hadeed-hm.png')).toString('base64');
-const MARK = (h = 34, ring = 'rgba(255,255,255,.35)') => `<span class="mark" style="height:${h}px; padding:0 ${Math.round(h * 0.2)}px; box-shadow: inset 0 0 0 1px ${ring}"><img src="${LOGO}" alt="" style="height:${Math.round(h * 0.6)}px"></span>`;
-const WORDMARK = (dark = true) => `<div class="brand">${MARK(dark ? 40 : 30, dark ? 'rgba(255,255,255,.35)' : '#8a939d')}<div><span class="n ${dark ? '' : 'ink'}">Hadeed Motors</span><span class="s ${dark ? '' : 'ink'}">St John's · Since 1972</span></div></div>`;
-const plate = (code, label, dark = false) => `<p class="plate ${dark ? 'dark' : ''}"><span class="c">${esc(code)}</span><span class="l">${esc(label)}</span></p>`;
+// The site's typographic wordmark (resources/views/components/logo.blade.php).
+const WORDMARK = (light) => `<div class="brand"><span class="bn" style="color:${light ? '#fff' : 'var(--ink)'}">Clarke's Court</span><span class="bs" style="color:${light ? 'rgba(255,255,255,.75)' : 'var(--ink-3)'};border-color:${light ? 'rgba(217,154,61,.7)' : 'var(--cask)'}">Grenada Distillers · 1937</span></div>`;
+// The barrel-hoop band that runs along the foot of every page header on the site.
+const HOOPS = 'linear-gradient(180deg, #2a1d13 0 4px, #8d6a45 4px 5px, transparent 5px calc(100% - 5px), #8d6a45 calc(100% - 5px) calc(100% - 4px), #2a1d13 calc(100% - 4px)), repeating-linear-gradient(90deg, #7a4a22 0 46px, #5d3818 46px 48px, #8a5a2e 48px 92px, #5d3818 92px 94px)';
+const RIBBON = 'linear-gradient(90deg, #ce1126 0 33.3%, #fcd116 33.3% 66.6%, #007a5e 66.6%)';
 
-/** Hand-written captions per slice (key = screen name, index = slice number), from what each slice shows. */
+/** Hand-written captions per slice (key = screen name, index = slice number). */
 const CAPTIONS = {
+  age: ['The age check every first-time visitor sees (18+, Grenada’s legal drinking age). It is a server-side check, so it works without JavaScript; “Remember me” keeps the answer for 30 days, and the visitor lands on the page they asked for.'],
   home: [
-    'Hero on Hadeed Motors\' own showroom photograph, the three main actions, the odometer-style facts strip (opened 1972, two franchises, the size of the line-up, pre-owned cars on the lot) and the "I\'d like to…" shortcuts to every request form.',
-    'The new line-up: six featured Nissan and Suzuki models with brand filters, each linking to its model page.',
-    '"On the lot this week": featured pre-owned stock pulled live from the inventory. These are sample listings; no prices are invented, so they read "Call for price".',
-    'Finance is upstairs: Finance & Development Co. and the three steps from pre-qualifying to driving home.',
-    'Service and parts, with the workshop hours read from the same settings as the booking calendar.',
-    'Heritage timeline from 1972 and the visit block with opening hours and directions.',
-    'Footer: phone, email, links for buying and owning, the showroom address and hours, and the staff sign-in.',
+    'Hero on the distillery’s own photograph of the range, then three doors for the three things the old site had nowhere to send: book a tour (with the next date that has places), trade and export, and careers (with the live vacancy count).',
+    'The shelf: four of the thirteen rums with their strength on a proof seal, then the heritage band on Clarke’s Court Bay, the bay the rum is named after.',
+    'Tours teaser with the next tour day and its places, and the export band for importers, distributors and duty-free buyers.',
+    'The footer: office hours, address and directions, the main links, and the responsible-drinking line.',
   ],
-  lineup: [
-    'New vehicles: brand filter in the page header, then the Nissan line-up.',
-    'The Suzuki line-up: every model sold new, each with body type and a one-line summary.',
-    'Closing call to action: book a test drive to compare two models.',
+  rums: [
+    'The range header, on the distillery’s own photograph of the bottles, with jump links to the three families.',
+    'Aged and dark rums. Every name and strength comes from the archived clarkescourtrum.com product pages; the bottle shots are the company’s own.',
+    'White and overproof rums, including Pure White at 69% ABV.',
+    'Flavoured rums and liqueurs.',
+    'A prompt for buyers that leads to the trade enquiry.',
   ],
-  model: [
-    'A model page (Suzuki Jimny): breadcrumb, test-drive and pre-qualify buttons, overview, gallery and an "at a glance" spec sheet with a call button (a WhatsApp button appears once you give us a WhatsApp number).',
-    'Trims with their features from Hadeed Motors\' own model pages, then "on the lot now", which lists new units entered in the inventory (a sample unit here).',
-    'More models from the same brand.',
+  rum: [
+    'A rum page: the story and tasting notes in the distillery’s own words, a spec sheet, how it is served, and the archived source it came from. No awards, prices or sizes are shown unless the distillery confirms them.',
+    'More from the same family, to keep visitors browsing.',
   ],
-  inventory: ['Pre-owned stock with filters for make, body type, price, year and transmission, and sorting. It works with or without JavaScript. All six cars are sample listings.'],
-  vehicle: [
-    'Vehicle page header: stock number, breadcrumb, availability and the sample-listing badge.',
-    'Photo gallery with arrows and thumbnails, odometer readout, full spec sheet, test-drive and call buttons, and a finance panel.',
-    'Similar vehicles by body type or make.',
+  heritage: [
+    'The story of the name, from Court Bay to the distillery of 1937, written from the company’s own history pages, beside the 1877 sale particulars for the estate.',
+    'A dated timeline from the 1670s to 2020, written plainly about the enslaved people who worked the estate. Every entry links its source.',
+    'The last entries, the company’s archive photographs of the mill, and an invitation to visit.',
   ],
-  finance: [
-    'Finance with FDC: four steps to your keys. The monthly estimator stays hidden until FDC publishes an indicative rate in Settings, so the page asks customers to pre-qualify instead.',
-    'Documents FDC asks for, taken from FDC\'s published requirements, then FDC\'s hours, contacts and common questions.',
+  tours: [
+    'What the tour covers, in the order a visitor sees it, taken from the distillery’s own tour description, with the practical facts beside it.',
+    'Booking starts here, on the same page.',
+    'A week-by-week grid with the places left on every tour, beside the party, access needs and contact details. Places are counted in guests and claimed under a lock, so two parties can never take the last places. The visitor gets a reference number on screen and by email.',
   ],
-  service: [
-    'Service and parts: the hero photograph and the three things the workshop does.',
-    'Online service booking, part 1: vehicle details and the type of work, beside the workshop hours and a parts shortcut.',
-    'Part 2: drop-off days with the places left on each, fully booked days greyed out (from sample bookings), the drop-off time and contact details.',
+  trade: [
+    'Trade and export: what buyers need to know, including ISO 22000 certification and the UK launch.',
+    'The enquiry: what happens next, then the company, country, type of business and markets.',
+    'The rums of interest, first-order size, licence status and who to reply to. The export team gets it with a reference number.',
   ],
-  about: [
-    'About: the company story from hadeedmotors.com and the milestones from 1972.',
-    'Links to the group companies, the line-up and the showroom.',
+  careers: [
+    'Open vacancies, closing soonest first. The three postings are samples based on vacancies Grenada Distillers advertised on NOW Grenada.',
+    'How applying works, on the company’s own photograph of its team.',
+  ],
+  job: ['A vacancy page with duties and requirements, an Apply button, and Google for Jobs structured data. Sample posting.'],
+  apply: [
+    'The application header, with the chosen vacancy named.',
+    'The form: vacancy, contact details, parish, experience, qualification, a CV upload (PDF or Word, up to 5 MB) and consent to keep it for 12 months. CVs are stored outside the public website.',
   ],
   contact: [
-    'Contact page header on a St John\'s harbour photograph.',
-    'Department directory, opening hours, Google Maps link and the message form.',
+    'Contact header on Clarke’s Court Bay.',
+    'The fastest route to the right team, the email and telephone, office hours, directions to Woodlands and a message form.',
   ],
-  'test-drive': [
-    'Test-drive booking header.',
-    'The car is pre-selected when the customer comes from a vehicle page. Only times with space left are offered, and closing time and public holidays are respected.',
-  ],
-  'finance-apply': [
-    'Finance pre-qualification, part 1: contact details, residency and employment.',
-    'Part 2: income band, deposit, preferred term and car, optional ID and pay-slip upload, and explicit consent to share with FDC. Bank or card numbers are never asked for and are refused if sent.',
-  ],
-  'trade-in': [
-    'Trade-in valuation: the customer\'s car, its condition, money still owed, up to six photos and the car they would like next.',
-    'Contact details and submit. Every form ends on a thank-you page with a reference number, also sent by email.',
-  ],
-  parts: [
-    'Parts request header.',
-    'VIN (checked as 17 characters, never I, O or Q), the part, quantity and an optional photo, with tips on where to find the VIN.',
-  ],
-  'admin-login': ['Staff sign-in. Accounts that have been switched off are refused and signed out.'],
+  'admin-login': ['Staff sign-in. Each person has their own account and role; switched-off accounts are refused and signed out.'],
   'admin-dashboard': [
-    'Overview: the number of leads waiting more than two hours for a call, headline tiles, leads per day for 30 days, leads by type and the sales pipeline. Figures are from the demo data. The setup reminder at the top stays until the notification inbox is configured.',
-    'The call queue (oldest new lead first) and the next three days of appointments.',
+    'The administrator’s overview leads with the one number to act on: requests that have waited more than a working day for a reply. Then the week’s requests, the median time to first reply, tour guests, trade enquiries and applications. Demo data.',
+    'Requests per day and by type, the “reply next” queue and the next three days of tours.',
   ],
-  'admin-inbox': [
-    'Unified leads inbox: status tabs with counts, filters by type and assignee, "waiting over 2h", search by name, phone, email or reference, and CSV export.',
-    'Every request from all six forms in one list, with type, vehicle, appointment, status and assignee.',
-  ],
-  'admin-lead': ['A test-drive lead: one-tap call, WhatsApp and email, the car requested with its stock details, status, assignment, appointment and the activity timeline.'],
-  'admin-lead-finance': ['The same screen for the finance role: employment, income band and deposit, the consent time, and the ID and pay slips. Only the finance role can open the documents, and every opening is logged on the timeline.'],
-  'admin-service': ['Workshop calendar: each day\'s bookings against the daily capacity, and the selected day\'s job list.'],
-  'admin-finance': ['FDC pipeline: applications in columns by decision stage (received, reviewing, needs documents, pre-qualified, declined, withdrawn). Changing a card\'s stage moves it.'],
-  'admin-vehicles': ['Inventory: every unit with photo, stock number, odometer, price, photo count and a quick status change (available, reserved, sold).'],
-  'admin-vehicle-edit': ['Vehicle editor: details, description, features, multi-photo upload with cover and delete, price, status and website visibility. Photos are resized automatically.'],
-  'admin-users': ['Staff accounts with four roles. Each role sees only the lead types it works.'],
-  'admin-settings': ['Settings: the indicative finance rate (blank keeps the estimator hidden) and the daily workshop capacity.'],
+  'admin-inbox': ['One inbox for every request, filtered by type, status, assignee or overdue, with search by name, company, country, phone or reference, and CSV export. Demo requests.', 'The rest of the page, with paging.'],
+  'tours-dashboard': ['The tours team’s overview: the same headline, scoped to tour bookings and general enquiries only. Demo data.'],
+  'tour-request': ['A tour booking: the slot, the party, access needs, one-tap email, call or WhatsApp, the status (confirmed, attended, no-show, cancelled), the assignee and a notes timeline. Cancelling frees the places. Demo booking.'],
+  'tour-calendar': ['The month calendar: guests booked against places each day, and a printable day sheet per tour for the guides. Demo bookings.'],
+  'trade-request': ['A trade enquiry as the export team sees it: company, country, markets, rums of interest, order size and licence, with a pipeline from contacted to samples to signed. Demo enquiry.'],
+  'hr-application': ['A job application as HR sees it. Only HR and administrators can open the CV, and every opening is recorded on the timeline. The tours and trade teams cannot see applications at all. Demo applicant and sample CV.'],
+  'hr-vacancies': ['HR publishes, edits and closes vacancies. A vacancy with applicants is closed, never deleted. Sample postings.'],
+  'admin-users': ['Staff accounts with four roles: administrator, tours, trade and HR.'],
+  'admin-settings': ['Guests per tour and the largest party that can book online, changed without a developer.'],
 };
 
-/** Screen definitions: section, key, title, bullets. */
 const SECTIONS = [
-  { id: 'public', eyebrow: 'Part 1', code: '01', title: 'The public website', intro: 'A new hadeedmotors.com on valid HTTPS, written from the facts on the current site, hadeedmotors.com\'s own model pages and FDC\'s published requirements. Every page works on a phone, and every inner page opens with the same graphite header.', screens: [
-    ['home', 'Home page', ['Hadeed Motors\' own showroom photograph, the dealership\'s history since 1972, and the line-up, pre-owned stock, finance and service in one scroll.', 'Six shortcuts ("I\'d like to…") lead straight to the request forms that the current site\'s menu points to.', 'On phones, a bar with Call and Test drive follows visitors on every page (WhatsApp joins it once you have a WhatsApp number).']],
-    ['lineup', 'New vehicles', ['Every Nissan and Suzuki model sold new, filterable by brand.', 'Old links such as index.html?page=vehicle&model=jimny redirect to the matching new page, so bookmarks and search results keep working.']],
-    ['model', 'Model page', ['Trims and features, spec sheet and gallery for each model.', 'New stock entered in the back office appears automatically under "on the lot now".', 'No prices are shown for new models: "Call for today\'s price", as the line-up changes by shipment.']],
-    ['inventory', 'Pre-owned stock', ['Filters and sorting for make, body type, price, year and transmission, all searchable by Google.', 'Reserved cars are badged, and sold cars stay listed as Sold for 7 days, then drop off.']],
-    ['vehicle', 'Vehicle page', ['Multi-photo gallery, odometer, full spec sheet and clear ways to act: book a test drive or call.', 'A monthly estimate appears automatically once FDC publishes an indicative rate.']],
-    ['finance', 'Finance with FDC', ['Explains the FDC process and the documents to bring.', 'An estimator that gives the same figure with or without JavaScript, hidden until a rate is published.']],
-    ['service', 'Service and online booking', ['Customers see which days have space and claim a drop-off place. The daily capacity is set by the workshop.', 'Weekends and public holidays are never offered.']],
-    ['about', 'About Hadeed Motors', ['The 1972 story, the founding philosophy and the milestones, from the current site.']],
-    ['contact', 'Contact and hours', ['Directory, opening hours, directions and a message form that lands in the inbox with a reference number.']],
+  { id: 'public', eyebrow: 'Part 1', title: 'The public website', intro: 'A modern, phone-first home for Clarke’s Court on clarkescourtrum.com. Every fact on it comes from the distillery’s own archived pages, its published vacancies or a cited source, and each rum page links where its facts came from.', screens: [
+    ['age', 'Age check', ['Shown once, before anything else; legal pages and the sitemap stay reachable for search engines.']],
+    ['home', 'Home page', ['Tours, trade and careers are the first three things a visitor sees.', 'The distillery’s own photographs where they exist; credited Wikimedia Commons images elsewhere, to be replaced.']],
+    ['rums', 'The rum range', ['Thirteen rums from the archived product pages, in the distillery’s own families.']],
+    ['rum', 'A rum page', ['Sourced facts only, with the source linked on the page.']],
+    ['heritage', 'Heritage', ['The estate’s history and the distillery since 1937, each milestone with its source.']],
+    ['tours', 'Distillery tours', ['Online booking with live places per tour, a reference number and an email confirmation.']],
+    ['trade', 'Trade & export', ['A proper landing place for importers, distributors and duty-free buyers.']],
+    ['careers', 'Careers', ['Vacancies published by HR from the back office.']],
+    ['job', 'Vacancy page', ['Search-engine ready job pages.']],
+    ['apply', 'Job application', ['CV upload to private storage, seen only by HR.']],
+    ['contact', 'Contact & directions', ['Each kind of request routed to the team that handles it.']],
   ]},
-  { id: 'requests', eyebrow: 'Part 2', code: '02', title: 'Online requests', intro: 'Five request forms replace the template filler on today\'s home page: test drive, service booking (shown in Part 1), parts, trade-in valuation and finance pre-qualification, plus the contact form. Each one gives the customer a reference number on screen and by email, and puts the request in the sales desk inbox.', screens: [
-    ['test-drive', 'Book a test drive', ['Any new model or any car in stock, on a weekday, at a time that still has space (two drives per slot by default).', 'The driving-licence confirmation is recorded on the lead.']],
-    ['finance-apply', 'Finance pre-qualification', ['Income band, deposit, term and car: enough for FDC to call with options. It is not a credit application.', 'ID and pay slips are stored privately, outside the public website, and only FDC\'s finance staff can open them.']],
-    ['trade-in', 'Trade-in valuation', ['Up to six phone photos (iPhone HEIC accepted) and the details a consultant needs for a first figure.']],
-    ['parts', 'Parts request', ['A checked VIN, the part and a photo, so the parts counter can quote on the first call.']],
-  ]},
-  { id: 'admin', eyebrow: 'Part 3', code: '03', title: 'The sales desk', intro: 'A private, role-based back office for sales, service, finance and management. Every web lead arrives with a reference number, an owner and a timeline, and anything not called within two hours is flagged as overdue.', screens: [
-    ['admin-login', 'Staff sign-in', ['Four roles: administrator, sales, service and parts, and finance.', 'Accounts are switched off rather than deleted, so lead history keeps its names.']],
-    ['admin-dashboard', 'Overview', ['Leads with an overdue counter first, because the dealer who calls back first is the one customers visit.', 'Median time to first call, test drives this week, cars available, today\'s service bookings and finance applications to review.']],
-    ['admin-inbox', 'Leads inbox', ['Each role sees only the lead types it works: sales sees test drives, trade-ins, finance and enquiries; service sees bookings, parts and enquiries.', 'CSV export for management reporting.']],
-    ['admin-lead', 'Lead detail', ['Status, assignment, appointment changes and notes in one place, with a full timeline.', 'Logging a call moves a new lead to Contacted and records the response time.']],
-    ['admin-lead-finance', 'Finance application (finance role)', ['Financial details are visible to finance and administrators; ID and pay slips open for the finance role only, not even administrators.']],
-    ['admin-service', 'Service calendar', ['Month view against daily capacity, so the workshop sees full days at a glance.']],
-    ['admin-finance', 'FDC pipeline', ['A board for the finance desk, separate from the sales status.']],
-    ['admin-vehicles', 'Inventory', ['Add, edit, reserve or mark sold; changes show on the website immediately.']],
-    ['admin-vehicle-edit', 'Vehicle editor', ['Up to 24 photos per car; phone photos are resized automatically to fast WebP copies.']],
-    ['admin-users', 'Staff and roles', ['Add staff, change roles and switch accounts off.']],
-    ['admin-settings', 'Settings', ['Settings the dealership controls without a developer.']],
+  { id: 'admin', eyebrow: 'Part 2', title: 'The staff back office', intro: 'One private back office with four roles. The tours team works bookings and the calendar; the trade team works export enquiries; HR works applications and vacancies; administrators see everything and manage staff and settings. Each person sees only the requests that are theirs to answer.', screens: [
+    ['admin-login', 'Staff sign-in', ['Individual accounts, rate-limited sign-in.']],
+    ['admin-dashboard', 'Administrator: overview', ['Leads with requests waiting more than a working day.']],
+    ['admin-inbox', 'Administrator: requests inbox', ['Every request in one place, filtered and searchable.']],
+    ['tours-dashboard', 'Tours: overview', ['Scoped to the tours team’s own requests.']],
+    ['tour-request', 'Tours: a booking', ['Confirm, record attendance or cancel, and email the guest in one tap.']],
+    ['tour-calendar', 'Tours: calendar and day sheet', ['Guests against places, per day and per tour.']],
+    ['trade-request', 'Trade: an export enquiry', ['A simple pipeline for every buyer.']],
+    ['hr-application', 'HR: an application', ['CVs open only for HR and administrators, and every opening is logged.']],
+    ['hr-vacancies', 'HR: vacancies', ['Publish, edit or close.']],
+    ['admin-users', 'Administrator: staff', ['Add staff and assign roles.']],
+    ['admin-settings', 'Administrator: settings', ['Tour capacity and party size.']],
   ]},
 ];
-const SCREEN_COUNT = SECTIONS.reduce((n, s) => n + s.screens.length, 0);
 
 const FEATURES = [
-  ['Public website', ['New-vehicle line-up and model pages', 'Pre-owned inventory with filters and galleries', 'Finance page with an FDC estimator', 'Service page with live day availability', 'About, group companies and contact', 'Redirects from the old site\'s links', 'Sitemap and Google structured data', 'Phone action bar on every page']],
-  ['Online requests', ['Test drive with slot capacity', 'Service booking with daily capacity', 'Parts request with VIN check and photo', 'Trade-in with up to six photos', 'Finance pre-qualification with private ID and pay-slip upload', 'Contact form', 'Reference number on screen and by email', 'Office alert email for every request']],
-  ['Sales desk', ['Dashboard with overdue-lead counter', 'Unified inbox, filters and CSV export', 'Assignment, status, notes and timeline', 'Workshop calendar against capacity', 'FDC finance pipeline', 'Inventory with multi-photo upload', 'Four staff roles', 'Settings for the rate and workshop capacity']],
-  ['Platform', ['Laravel 13 on PHP 8.3', 'Valid HTTPS throughout', 'Customer documents stored privately', 'Finance documents for the finance role only', 'Rate-limited, spam-protected forms', 'Light and dark themes', `${TESTS} automated tests`, 'Packaged for one-zip installation']],
+  ['Public website', ['Phone-first, light and dark themes', 'Age check that works without JavaScript', 'A page per rum, sourced facts only', 'Heritage timeline with sources', 'Tour booking with live places', 'Trade & export enquiries', 'Careers with CV upload', 'Redirects from the old site’s addresses', 'Sitemap and structured data for search']],
+  ['Back office', ['Four roles: admin, tours, trade, HR', 'Headline: requests waiting over a day', 'One inbox with filters, search and CSV', 'Per-type statuses and notes', 'Tour calendar and printable day sheet', 'Vacancy publishing', 'CVs for HR only, every opening logged', 'Editable tour capacity']],
+  ['Platform', ['Laravel 13 on PHP 8.3', 'Runs on standard shared hosting', 'Private file storage outside the web root', 'HTTPS, security headers, spam protection', '49 automated tests', 'Packaged installer and written guide']],
 ];
 
-/**
- * Pack a screen's slices onto pages. A slice's height ÷ width is its share of a page. Every slice keeps
- * its own caption; slices never break across pages and keep their order. The layout is chosen by cost:
- * one point per page, one more for a page left about a third empty, half a point for shrinking slices
- * below 68% of a 1440px screen to share a page (never below 55%), and a quarter point for moving the
- * bullets off the first page. So a short slice joins its neighbour instead of sitting alone on a
- * half-blank page; ties go to the layout whose emptiest page is fullest.
- */
-function pages(c, hasBullets) {
-  const sizes = c.sizes ?? c.chunks.map(() => [1440, 1440]);
-  // Page capacity as image height ÷ text width: about 1.22 below the heading, 0.98 when bullets sit on top.
-  // The estimate leaves out caption height, so a page counts as gappy at 25% estimated (about 35% printed).
-  const CAP = 0.08, GOOD_SCALE = 0.68, MIN_SCALE = 0.55, GAP = 0.25;
-  const ratios = sizes.map(([w, h]) => h / w);
-  const page = (from, to, bullets) => {
-    const budget = bullets ? 0.98 : 1.22;
-    const sum = ratios.slice(from, to).reduce((a, r) => a + r, 0);
-    const n = to - from;
-    const scale = Math.min(1, (budget - CAP * n) / sum);
-    const readable = scale * 1440 / sizes[from][0]; // narrower captures carry larger type
-    if (n > 1 && readable < MIN_SCALE) return null;
-    const empty = 1 - (sum * scale + CAP * n) / budget;
-    return { items: [...Array(n).keys()].map((k) => from + k), bullets, budget, scale, empty, cost: 1 + (empty > GAP ? 1 : 0) + (readable < GOOD_SCALE ? 0.5 : 0) + (bullets && from > 0 ? 0.25 : 0) };
-  };
-  // best(i, owed) = cheapest packing of slices i..end, where owed means the bullets still need a page.
-  const n = ratios.length;
-  const memo = new Map();
-  const best = (i, owed) => {
-    if (i === n) return owed ? null : { list: [], cost: 0, worst: 0 };
-    const key = i + ':' + owed;
-    if (memo.has(key)) return memo.get(key);
-    let pick = null;
-    for (const here of owed ? [true, false] : [false]) {
-      for (let j = i + 1; j <= n; j++) {
-        const pg = page(i, j, here);
-        if (!pg) break;
-        const rest = best(j, owed && !here);
-        if (!rest) continue;
-        const cand = { list: [pg, ...rest.list], cost: pg.cost + rest.cost, worst: Math.max(pg.empty, rest.worst) };
-        if (!pick || cand.cost < pick.cost - 1e-9 || (Math.abs(cand.cost - pick.cost) < 1e-9 && cand.worst < pick.worst - 1e-9)) pick = cand;
-      }
-    }
-    memo.set(key, pick);
-    return pick;
-  };
-  return best(0, hasBullets).list;
-}
+const PHONES = [
+  [['m-home', 'Home'], ['m-rum', 'A rum page'], ['m-tours', 'Booking a tour']],
+  [['m-apply', 'Applying for a job'], ['m-tours-dashboard', 'Overview (tours team)'], ['m-tour-request', 'A booking (tours team)']],
+];
 
 function caption(key, i, c) {
   const text = CAPTIONS[key]?.[i];
   if (!text) return '';
-  const n = c.chunks.length > 1 ? `${i + 1}/${c.chunks.length} · ` : '';
-  return `<figcaption class="cap"><span class="n">${esc(n)}</span>${esc(text)}</figcaption>`;
+  const n = c.chunks.length > 1 ? `Part ${i + 1} of ${c.chunks.length} · ` : '';
+  return `<figcaption class="cap">${esc(n)}${esc(text)}</figcaption>`;
 }
 
-function screenPages(sec, [key, title, bullets]) {
-  const c = chunks[key];
-  if (!c) throw new Error(`Screenshot missing: ${key}`);
-  return pages(c, bullets.length > 0).map((p, pi) => `
+// Screen pages are packed by measured height. Each section's slices are split into pages, in order, so
+// that a page can hold slices from more than one screen (a slice that starts a new screen mid-page gets a
+// small screen heading). A page may shrink its screenshots a little (to no less than 85% width) to take
+// one more slice, such as a short tail. The split is chosen to avoid half-empty pages first, then to use
+// as few pages as possible, then to shrink as little as possible.
+const CONTENT_W = 7.4 * 96; // letter width minus the 0.55in side margins, in CSS px
+const PAGE_H = 10 * 96; // .page height
+const ITEM_GAP = 16; // .item + .item
+const SAFETY = 6;
+const MIN_SCALE = 0.85;
+const HALF_EMPTY = 0.55; // a page whose content ends above 55% of its height reads as half empty
+
+const headHtml = (sec, title, url, cont) => `<header class="shot-head"><div><p class="eyebrow">${esc(sec.title)}${cont ? ' · continued' : ''}</p><h2>${esc(title)}</h2></div><p class="url">${esc(url)}</p></header>`;
+const subHtml = (title, url) => `<header class="sub-head"><h3>${esc(title)}</h3><p class="url">${esc(url)}</p></header>`;
+const bulletsHtml = (bullets) => `<ul class="bullets">${bullets.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>`;
+
+function sectionSlices(sec) {
+  return sec.screens.flatMap(([key, title, bullets]) => {
+    const c = chunks[key];
+    if (!c) throw new Error(`Screenshot missing: ${key}`);
+    return c.chunks.map((file, i) => ({ key, title, bullets, url: c.url, i, file, cap: caption(key, i, c), report: false }));
+  });
+}
+
+/** Renders every piece once in Chrome at the page's content width and returns their outer heights. */
+async function measure(browser, sections) {
+  const pieces = {};
+  const add = (id, h) => { pieces[id] = h; };
+  for (const sec of sections) {
+    add(`foot`, foot());
+    for (const sl of sectionSlices(sec)) {
+      if (sl.i === 0) {
+        add(`head:${sl.key}:0`, headHtml(sec, sl.title, sl.url, false));
+        add(`sub:${sl.key}`, subHtml(sl.title, sl.url));
+        add(`bul:${sl.key}`, bulletsHtml(sl.bullets));
+      } else add(`head:${sl.key}:1`, headHtml(sec, sl.title, sl.url, true));
+      add(`cap:${sl.key}:${sl.i}`, sl.cap);
+    }
+  }
+  const files = [...new Set(sections.flatMap((sec) => sectionSlices(sec).map((sl) => sl.file)))];
+  const file = path.resolve('dist/proposal/measure.html');
+  fs.writeFileSync(file, `<!doctype html><html><head><meta charset="utf-8"><style>${STYLE}</style></head><body>${Object.entries(pieces).map(([id, h]) => `<div data-id="${esc(id)}" style="width:${CONTENT_W}px;display:flex;flex-direction:column">${h}</div>`).join('')}</body></html>`);
+  const page = await browser.newPage();
+  await page.goto('file://' + file, { waitUntil: 'networkidle0' });
+  await page.evaluate(() => document.fonts.ready);
+  const out = await page.evaluate(async (files) => {
+    const h = {};
+    for (const el of document.querySelectorAll('[data-id]')) h[el.dataset.id] = el.getBoundingClientRect().height;
+    const dims = {};
+    for (const f of files) { const im = new Image(); im.src = f; await im.decode(); dims[f] = [im.naturalWidth, im.naturalHeight]; }
+    return { h, dims };
+  }, files.map(img));
+  await page.close();
+  fs.rmSync(file);
+  return { h: out.h, dims: Object.fromEntries(files.map((f) => [f, out.dims[img(f)]])) };
+}
+
+function packSection(sec, { h, dims }) {
+  const budget = PAGE_H - h.foot - SAFETY;
+  const slices = sectionSlices(sec);
+  const imgBox = (sl) => {
+    const [nw, nh] = dims[sl.file];
+    const w = sl.report ? Math.min(CONTENT_W, 6.9 * 96 * nw / nh) : CONTENT_W;
+    return { w, h: w * nh / nw };
+  };
+  // A page holding slices a..b-1: its items, the scale that fits them, the height used.
+  const layout = (a, b) => {
+    const first = slices[a];
+    const headH = h[`head:${first.key}:${first.i > 0 ? 1 : 0}`];
+    const items = slices.slice(a, b).map((sl, k) => {
+      const sub = k > 0 && sl.i === 0;
+      const fixed = (k ? ITEM_GAP : 0) + (sub ? h[`sub:${sl.key}`] : 0) + (sl.i === 0 ? h[`bul:${sl.key}`] : 0) + h[`cap:${sl.key}:${sl.i}`];
+      return { sl, sub, fixed, img: imgBox(sl) };
+    });
+    const fixed = headH + items.reduce((t, it) => t + it.fixed, 0);
+    const imgs = items.reduce((t, it) => t + it.img.h, 0);
+    const scale = Math.min(1, (budget - fixed) / imgs);
+    return { first, items, scale, used: fixed + imgs * scale };
+  };
+  // best[a] = cheapest packing of slices a..end; a lone slice always fits (shrunk if it must be).
+  const best = Array(slices.length + 1).fill(null);
+  best[slices.length] = { cost: 0, pages: [] };
+  for (let a = slices.length - 1; a >= 0; a--) {
+    for (let b = a + 1; b <= slices.length; b++) {
+      const pg = layout(a, b);
+      if (b - a > 1 && pg.scale < MIN_SCALE) break;
+      const cost = (pg.used < HALF_EMPTY * PAGE_H ? 1000 : 0) + 100 + 200 * (1 - pg.scale) + best[b].cost;
+      if (!best[a] || cost < best[a].cost) best[a] = { cost, pages: [pg, ...best[b].pages] };
+    }
+  }
+  const pages = best[0].pages;
+  return pages.map((pg) => `
     <section class="page shot">
-      <header class="shot-head">
-        <div><p class="eyebrow">${esc(sec.title)}${pi ? ' · continued' : ''}</p><h2>${esc(title)}</h2></div>
-        <p class="url">${esc(c.url)}</p>
-      </header>
-      ${p.bullets ? `<ul class="bullets">${bullets.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>` : ''}
-      ${p.items.map((i) => `<figure><img style="width:${(p.scale * 100).toFixed(1)}%" src="${img(c.chunks[i])}" alt="${esc(title)}">${caption(key, i, c)}</figure>`).join('')}
+      ${headHtml(sec, pg.first.title, pg.first.url, pg.first.i > 0)}
+      ${pg.items.map(({ sl, sub, img: box }) => `<div class="item">${sub ? subHtml(sl.title, sl.url) : ''}${sl.i === 0 ? bulletsHtml(sl.bullets) : ''}<figure class="${sl.report ? 'report' : ''}"><img src="${img(sl.file)}" alt="${esc(sl.title)}" style="width:${(box.w * pg.scale).toFixed(1)}px;height:${(box.h * pg.scale).toFixed(1)}px">${sl.cap}</figure></div>`).join('')}
       ${foot()}
     </section>`).join('');
 }
 
-const foot = () => `<footer class="foot"><span class="fl">${MARK(16, '#d5d9de')}Hadeed Motors · Website proposal</span><span>Code Canvas Consultants Ltd · ${esc(DATE)}</span></footer>`;
-const notes = (list) => `<div class="phone-notes">${list.map(([t, d]) => `<div><b>${esc(t)}</b>${esc(d)}</div>`).join('')}</div>`;
-const phones = (list) => `<div class="phones">${list.map(([k, c]) => `<figure><img src="${img(chunks[k].chunks[0])}" alt="${esc(c)}"><figcaption>${esc(c)}</figcaption></figure>`).join('')}</div>`;
+const foot = () => `<footer class="foot"><span>${esc(TITLE)}</span><span>${esc(DATE)}</span></footer>`;
 
-const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Hadeed Motors – Website Proposal</title>
-<style>
+const STYLE = `
   ${FONTS}
-  @page { size: Letter; margin: 0.5in 0.6in 0.55in; }
-  :root { --graphite: #16191d; --graphite-950: #0e1013; --gm: #2a3038; --bg: #f6f6f3; --surface-2: #eceeef; --ink: #16191d; --ink-2: #3d444c; --ink-3: #5b6470; --line: #dcdfe2; --coral: #f0643c; --coral-text: #b13d17; --coral-soft: #fde9e0; }
+  :root { --m950: #120c07; --m900: #1f150d; --oak: #6e4320; --cask: #a8662c; --amber: #d99a3d; --amber-text: #8a4a12; --amber-soft: #f6e6c9; --paper: #f7f1e6; --ink: #1f150d; --ink-2: #4a3a2c; --ink-3: #6b5847; --line: #e2d6c3; }
+  @page { size: Letter; margin: 0.5in 0.55in 0.5in; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; font-family: "Hanken Grotesk", system-ui, sans-serif; color: var(--ink); font-size: 10.5pt; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  h1, h2, h3, .display { font-family: "Unbounded", system-ui, sans-serif; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); margin: 0; line-height: 1.05; }
-  h3 { font-family: "Hanken Grotesk", system-ui, sans-serif; letter-spacing: 0; font-size: 12pt; }
-  .page { page-break-after: always; break-after: page; height: 9.95in; display: flex; flex-direction: column; overflow: hidden; }
-  .page:last-child { page-break-after: auto; }
-  .eyebrow { font-size: 8pt; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--coral-text); margin: 0 0 5px; }
+  html, body { margin: 0; padding: 0; font-family: 'Source Sans 3', 'Helvetica Neue', Arial, sans-serif; color: var(--ink); font-size: 10.6pt; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  h1, h2, h3 { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; color: var(--m900); margin: 0; line-height: 1.05; }
+  b, strong { font-weight: 700; }
+  .page { page-break-after: always; break-after: page; height: 10in; display: flex; flex-direction: column; overflow: hidden; }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+  .eyebrow { font-size: 8pt; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--amber-text); margin: 0 0 4px; }
   .muted { color: var(--ink-3); }
-  /* number-plate label, as on the site */
-  .plate { align-self: flex-start; display: inline-flex; border: 1.5px solid currentColor; border-radius: 6px; padding: 2px; font-size: 7.5pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; line-height: 1; color: var(--ink-2); margin: 0 0 12px; }
-  .plate span { display: inline-flex; align-items: center; padding: 5px 7px 4px; border-radius: 3px; }
-  .plate .c { background: var(--ink); color: var(--bg); font-family: "Unbounded"; font-weight: 500; letter-spacing: .04em; }
-  .plate .l { box-shadow: inset 0 0 0 1px rgba(0,0,0,.18); margin-left: 2px; }
-  .plate.dark { color: rgba(255,255,255,.85); } .plate.dark .c { background: var(--coral); color: var(--graphite); } .plate.dark .l { box-shadow: inset 0 0 0 1px rgba(255,255,255,.28); }
-  .ticks { height: 12px; opacity: .35; background: repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 0.42in) left bottom / 100% 12px no-repeat, repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 0.084in) left bottom / 100% 6px no-repeat; }
-  /* cover and dividers: the site's graphite hero band */
-  .dark-page { background: var(--graphite); color: #fff; border-radius: 16px; padding: 0.6in 0.6in 0.5in; position: relative; overflow: hidden; }
-  .dark-page h1 { color: #fff; }
-  .cover { justify-content: space-between; background-image: linear-gradient(180deg, rgba(14,16,19,.55), rgba(14,16,19,.95) 62%), url("${img(path.join(ROOT, 'public/img/showroom-1920.webp'))}"); background-size: cover; background-position: 22% 0; }
-  .cover h1 { font-size: 40pt; margin: 14px 0 16px; max-width: 6.2in; }
-  .cover .accent { color: var(--coral); }
-  .cover .lead { color: rgba(255,255,255,.85); font-size: 13pt; max-width: 5.8in; margin: 0; }
-  .cover .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; border-top: 1px solid rgba(255,255,255,.18); padding-top: 16px; font-size: 9.5pt; color: rgba(255,255,255,.8); }
-  .cover .meta b { display: block; color: #fff; font-size: 9pt; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 4px; }
-  .brand { display: flex; align-items: center; gap: 10px; } .brand .n { display: block; font-family: "Unbounded"; font-weight: 700; font-size: 17pt; color: #fff; line-height: 1; letter-spacing: -0.02em; } .brand .s { display: block; margin-top: 4px; font-size: 7pt; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.7); }
-  .mark { display: inline-flex; align-items: center; flex: none; background: #fff; border-radius: 5px; } .mark img { display: block; width: auto; }
-  .brand .ink { color: var(--ink); } .brand .s.ink { color: var(--ink-3); }
+  /* molasses bands: cover and part dividers, with the barrel hoops and the Grenada ribbon */
+  .band { background: var(--m900); color: #fff; border-radius: 10px; padding: 0.65in 0.6in 0.85in; position: relative; overflow: hidden; }
+  .band::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: ${RIBBON}; }
+  .band::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 22px; background: ${HOOPS}; }
+  .band h1 { color: #fff; } .band .eyebrow { color: var(--amber); }
+  .cover { justify-content: space-between; }
+  .brand { display: inline-flex; flex-direction: column; } .bn { font-family: 'DM Serif Display', Georgia, serif; font-size: 26pt; line-height: 1; } .bs { margin-top: 5px; padding-top: 4px; border-top: 1px solid; font-size: 7.5pt; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
+  .stamp { display: inline-flex; align-items: center; gap: 8px; padding: 3px 11px 3px 3px; border: 1.5px solid var(--amber); border-radius: 999px; color: var(--amber); font-size: 7.5pt; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; } .stamp i { font-style: normal; display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 999px; background: var(--amber); color: var(--m900); font-family: 'DM Serif Display', Georgia, serif; font-size: 9pt; letter-spacing: 0; padding: 0 4px; }
+  .cover h1 { font-size: 40pt; line-height: 1.02; margin: 16px 0 14px; } .cover h1 em { color: var(--amber); font-style: italic; }
+  .cover p.lead { color: rgba(255,255,255,.86); font-size: 12.5pt; max-width: 5.8in; margin: 0; }
+  .cover .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; border-top: 1px solid rgba(255,255,255,.18); padding-top: 16px; font-size: 9.3pt; color: rgba(255,255,255,.82); margin-bottom: 16px; }
+  .cover .meta b { display: block; font-size: 8pt; letter-spacing: .14em; text-transform: uppercase; margin-bottom: 4px; color: var(--amber); }
+  .cover .meta .n { color: #fff; font-weight: 700; font-size: 10.5pt; }
   .divider { justify-content: center; }
-  .divider h1 { font-size: 38pt; margin: 6px 0 18px; } .divider p.intro { color: rgba(255,255,255,.85); font-size: 12.5pt; max-width: 6in; margin: 0; }
-  .divider ol { color: rgba(255,255,255,.85); columns: 2; font-size: 10pt; margin: 26px 0 0; padding-left: 18px; } .divider li { break-inside: avoid; margin: 3px 0; }
-  .divider .note { margin-top: 22px; font-size: 9pt; color: rgba(255,255,255,.65); max-width: 6in; }
-  .divider .ticks, .cover .ticks { position: absolute; left: 0; right: 0; bottom: 0; color: #fff; }
+  .divider h1 { font-size: 40pt; margin: 8px 0 16px; } .divider p { color: rgba(255,255,255,.86); font-size: 12pt; max-width: 5.9in; margin: 0; }
+  .divider ol { color: rgba(255,255,255,.86); columns: 2; font-size: 10pt; margin: 22px 0 0; padding-left: 18px; } .divider li { break-inside: avoid; margin: 3px 0; }
   /* text pages */
-  .prose h1 { font-size: 24pt; margin-bottom: 12px; }
-  .prose h2 { font-size: 13pt; margin: 16px 0 6px; letter-spacing: -0.01em; }
+  .prose h1 { font-size: 28pt; margin-bottom: 10px; }
+  .prose h2 { font-size: 16pt; margin: 14px 0 6px; }
   .prose p { margin: 0 0 8px; }
-  .prose ul.plain { margin: 0 0 8px; padding-left: 16px; } .prose ul.plain li { margin: 2px 0; }
+  .prose ul.list { margin: 0 0 8px; padding-left: 17px; } .prose ul.list li { margin: 2px 0; }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .card { border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px; background: #fff; break-inside: avoid; }
-  .card h3 { margin-bottom: 5px; }
-  .card ul { margin: 0; padding-left: 15px; } .card li { margin: 2px 0; font-size: 9.6pt; }
-  .evidence { border-left: 4px solid var(--coral); background: var(--bg); border-radius: 0 10px 10px 0; padding: 10px 14px 10px 30px; margin: 8px 0 10px; }
-  .evidence li { margin: 3px 0; }
-  .src { font-size: 8pt; color: var(--ink-3); }
-  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 12px 0 6px; }
-  .stat { background: var(--graphite); color: #fff; border-radius: 12px; padding: 12px 12px 11px; }
-  .stat b { display: inline-flex; gap: 3px; font-family: "Unbounded"; font-weight: 500; font-size: 20pt; line-height: 1; }
-  .stat b i { font-style: normal; display: inline-block; min-width: .95em; text-align: center; padding: 3px 2px 2px; border-radius: 3px; background: linear-gradient(180deg,#0b0d10 0%,#2a3038 22%,#2f3640 50%,#2a3038 78%,#0b0d10 100%); }
-  .stat b i.hl { background: linear-gradient(180deg,#8a2a0c 0%,#f0643c 26%,#ff7a4d 50%,#f0643c 74%,#8a2a0c 100%); color: var(--graphite); }
-  .stat span { display: block; margin-top: 8px; font-size: 8.5pt; color: rgba(255,255,255,.78); line-height: 1.3; }
-  table.feat { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
-  table.feat th, table.feat td { border-bottom: 1px solid var(--line); padding: 8px 8px; text-align: left; vertical-align: top; }
-  table.feat th { background: var(--surface-2); font-size: 8pt; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-3); }
-  .pill-row { display: flex; flex-wrap: wrap; gap: 5px; } .pill { border: 1px solid #f6c3ae; background: var(--coral-soft); color: var(--coral-text); border-radius: 999px; padding: 2px 9px; font-size: 8.5pt; font-weight: 600; }
+  .card { border: 1px solid var(--line); border-radius: 6px; padding: 11px 13px; background: #fffbf4; break-inside: avoid; position: relative; }
+  .card::before { content: ''; position: absolute; inset: 3px; border: 1px solid rgba(226,214,195,.7); border-radius: 4px; pointer-events: none; }
+  .card h3 { font-size: 13pt; margin-bottom: 5px; }
+  .card ul { margin: 0; padding-left: 15px; } .card li { margin: 2px 0; }
+  .evidence { border-left: 3px solid var(--cask); background: var(--amber-soft); border-radius: 0 6px 6px 0; padding: 9px 12px 9px 28px; margin: 8px 0 10px; }
+  .prose ul.evidence { padding-left: 30px; } .evidence li { margin: 3px 0; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin: 12px 0; } .stat { background: var(--m900); color: #fff; border-radius: 6px; padding: 11px 12px; border-bottom: 4px solid var(--oak); } .stat b { display: block; font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: 26pt; line-height: 1; color: var(--amber); } .stat span { display: block; margin-top: 4px; font-size: 8.6pt; color: rgba(255,255,255,.85); line-height: 1.3; }
+  table.feat { width: 100%; border-collapse: collapse; font-size: 9.4pt; } table.feat td { border-bottom: 1px solid var(--line); padding: 9px 6px; vertical-align: top; } table.feat td:first-child { width: 20%; font-family: 'DM Serif Display', Georgia, serif; font-size: 13.5pt; color: var(--m900); }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 5px; } .pill { border: 1px solid #e3cfa6; background: var(--amber-soft); color: var(--m900); border-radius: 999px; padding: 2px 9px; font-size: 8.6pt; font-weight: 600; }
+  table.sla { width: 100%; border-collapse: collapse; font-size: 9.4pt; margin: 4px 0 8px; } table.sla th, table.sla td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--line); } table.sla th { color: var(--ink-3); font-size: 8pt; letter-spacing: .1em; text-transform: uppercase; }
+  .price { display: grid; grid-template-columns: 1.35fr 1fr; gap: 12px; align-items: stretch; margin: 6px 0 4px; }
+  .price .big { background: var(--m900); color: #fff; border-radius: 8px; padding: 14px 16px; border-bottom: 5px solid var(--oak); } .price .big .amt { font-family: 'DM Serif Display', Georgia, serif; font-size: 30pt; line-height: 1; color: var(--amber); } .price .big .amt small { font-size: 13pt; color: #fff; } .price .big p { color: rgba(255,255,255,.86); font-size: 9.6pt; margin: 8px 0 0; } .price .big p b { color: #fff; }
+  .price .year { border: 2px solid var(--cask); border-radius: 8px; padding: 10px 14px; background: #fffbf4; display: grid; gap: 4px; } .price .year span { display: block; font-size: 8pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--amber-text); } .price .year b { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: 16pt; color: var(--m900); }
+  ul.terms li { margin: 3px 0; }
+  .weeks { margin: 6px 0 10px; } .week { display: grid; grid-template-columns: 0.9in 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); } .week b { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: 14pt; color: var(--amber-text); } .week p { margin: 0; }
+  ul.plain { padding-left: 17px; margin: 0 0 8px; } ul.plain li { margin: 3px 0; }
+  .contact { margin-top: 18px; max-width: 4.8in; }
+  a { color: var(--amber-text); }
   /* screenshot pages */
-  .shot-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; margin-bottom: 7px; }
-  .shot-head h2 { font-size: 16pt; } .url { font-family: Menlo, Consolas, monospace; font-size: 8pt; color: var(--ink-3); margin: 0; white-space: nowrap; }
-  .bullets { margin: 0 0 7px; padding-left: 16px; font-size: 9.3pt; } .bullets li { margin: 1px 0; } .bullets li::marker { color: var(--coral); }
-  figure { margin: 0 0 8px; display: block; text-align: center; }
-  figure img { display: block; margin: 0 auto; border: 1px solid var(--line); border-radius: 6px; }
-  .cap { text-align: left; margin: 5px 0 0; font-size: 8.6pt; line-height: 1.35; color: var(--ink-2); border-left: 3px solid var(--coral); padding-left: 8px; }
-  .cap .n { font-weight: 700; color: var(--ink-3); }
-  .phones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 12px; }
-  .phones figure { margin: 0; }
-  .phones img { width: 100%; border-radius: 22px; border: 7px solid var(--graphite); }
-  .phone-notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 14px; }
-  .phone-notes div { background: var(--bg); border-radius: 10px; padding: 9px 12px; font-size: 9pt; color: var(--ink-2); }
-  .phone-notes b { display: block; color: var(--ink); font-size: 9.5pt; margin-bottom: 2px; }
-  .phones figcaption { text-align: center; font-size: 9pt; color: var(--ink-2); margin-top: 6px; font-weight: 600; }
-  /* investment */
-  .price { display: grid; grid-template-columns: 1.45fr 1fr; gap: 14px; align-items: stretch; margin: 6px 0 4px; }
-  .price .big { background: var(--graphite); color: #fff; border-radius: 14px; padding: 16px 18px; }
-  .price .big .amt { white-space: nowrap; font-family: "Unbounded"; font-weight: 700; font-size: 26pt; line-height: 1; color: #fff; } .price .big .amt small { font-size: 11pt; font-weight: 500; color: rgba(255,255,255,.75); }
-  .price .big p { color: rgba(255,255,255,.82); margin: 8px 0 0; font-size: 9.6pt; }
-  .price .year { border: 2px solid var(--coral); border-radius: 14px; padding: 14px 16px; background: var(--coral-soft); }
-  .price .year div { display: flex; justify-content: space-between; gap: 8px; padding: 4px 0; border-bottom: 1px dotted #e3a58c; font-size: 10pt; } .price .year div:last-child { border: 0; }
-  .price .year b { font-family: "Unbounded"; font-weight: 500; }
-  .terms li { margin: 3px 0; font-size: 9.6pt; }
-  .sla { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: 4px; } .sla td, .sla th { border-bottom: 1px solid var(--line); padding: 4px 6px; text-align: left; } .sla th { font-size: 7.8pt; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); background: var(--surface-2); }
-  .weeks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 6px 0 10px; }
-  .week { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: #fff; }
-  .week b { display: inline-block; font-family: "Unbounded"; font-weight: 500; font-size: 8.5pt; background: var(--ink); color: var(--bg); border-radius: 4px; padding: 3px 6px; margin-bottom: 5px; }
-  .week p { margin: 0; font-size: 9.5pt; }
-  footer.foot { margin-top: auto; padding-top: 6px; font-size: 7.8pt; color: #8a939d; display: flex; justify-content: space-between; border-top: 1px solid var(--line); align-items: center; } footer.foot .fl { display: inline-flex; align-items: center; gap: 6px; }
-</style></head><body>
+  .shot-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; border-bottom: 2px solid var(--m900); padding-bottom: 6px; margin-bottom: 7px; }
+  .shot-head h2 { font-size: 20pt; } .url { font-family: Menlo, Consolas, monospace; font-size: 8pt; color: var(--ink-3); margin: 0; white-space: nowrap; }
+  .bullets { margin: 0 0 7px; padding-left: 16px; font-size: 9.4pt; } .bullets li { margin: 1px 0; }
+  figure { margin: 0; display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+  figure img { display: block; max-width: 100%; min-height: 0; flex: 0 1 auto; object-fit: contain; object-position: left top; border: 1px solid var(--line); border-radius: 4px; align-self: flex-start; }
+  .item { display: flex; flex-direction: column; flex: none; } .item + .item { margin-top: 16px; } .item figure { flex: none; } .item figure img { max-width: none; max-height: none; flex: none; }
+  .sub-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-bottom: 6px; } .sub-head h3 { font-size: 14.5pt; }
+  .cap { margin: 6px 0 0; font-size: 9pt; line-height: 1.38; color: var(--ink-2); border-left: 3px solid var(--cask); padding-left: 8px; flex: none; }
+  .phones { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 14px 0.15in 0; } .phones figure { display: block; } .phones img { display: block; width: 100%; height: auto; border-radius: 18px; border: 6px solid var(--m950); } .phones figcaption { text-align: center; font-size: 9pt; color: var(--ink-3); margin-top: 6px; }
+  footer.foot { margin-top: auto; padding-top: 8px; font-size: 7.8pt; color: #8f7d6b; display: flex; justify-content: space-between; flex: none; }
+`;
 
-<section class="page dark-page cover">
-  ${WORDMARK()}
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
+const measured = await measure(browser, SECTIONS);
+const packed = Object.fromEntries(SECTIONS.map((sec) => [sec.id, packSection(sec, measured)]));
+
+const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(TITLE)}</title>
+<style>${STYLE}</style></head><body>
+
+<section class="page band cover">
+  ${WORDMARK(true)}
   <div>
-    ${plate('HM', 'Website proposal · ' + DATE, true)}
-    <h1>A website that sells cars, <span class="accent">books the workshop</span> and follows up every lead.</h1>
-    <p class="lead">A complete rebuild of hadeedmotors.com on valid HTTPS, with online test-drive, service, parts, trade-in and finance requests feeding one sales desk for sales, service and FDC.</p>
+    <p class="stamp"><i>37</i>Website proposal · ${esc(DATE)}</p>
+    <h1>A website worthy of <em>Grenada’s national rum</em></h1>
+    <p class="lead">A complete Clarke’s Court website on clarkescourtrum.com with an age check, a page for every rum, the distillery’s heritage, online tour booking, trade and export enquiries, careers with CV upload, and a staff back office – for US$1,000 a month, with no charge for design and development.</p>
   </div>
   <div class="meta">
-    <div><b>Prepared for</b>Hadeed Motors Ltd<br>Hadeed Motors Complex, Old Parham Road<br>St John's, Antigua</div>
-    <div><b>Prepared by</b>Keron Lewis, Code Canvas Consultants Ltd<br>Port of Spain · codecanvastt.com<br>+1 868 466-CODE · info@codecanvastt.com</div>
+    <div><b>Prepared for</b><span class="n">Grenada Distillers Ltd</span><br>Woodlands Valley, St George<br>Grenada</div>
+    <div><b>Prepared by</b><span class="n">Keron Lewis, Code Canvas Consultants Ltd</span><br>Port of Spain · codecanvastt.com<br>+1 868 466-CODE · info@codecanvastt.com</div>
   </div>
-  <div class="ticks"></div>
 </section>
 
 <section class="page prose">
-  ${plate('01', 'Executive summary')}
+  <p class="eyebrow">Executive summary</p>
   <h1>Why rebuild now</h1>
-  <p>Hadeed Motors has sold cars on Old Parham Road since 1972: Nissan since the Datsun days, Suzuki since 1995, with Finance &amp; Development Co. lending from the floor above since 1984. In 2016 Business View Caribbean described it as Antigua and Barbuda's largest auto dealer. Its website does not reflect that standing today. When we checked hadeedmotors.com on 23 October 2026:</p>
-  <ul class="evidence">
-    <li><b>The secure address does not work.</b> https://hadeedmotors.com fails because its certificate is issued to the hosting server (swmp-550-116.slc.westdc.net), not to hadeedmotors.com. The site only loads over plain HTTP, which browsers label "Not secure", including on its forms.</li>
-    <li><b>Template filler is still live on the home page:</b> menu cards reading "Car 1 description 1" through "Car 5", panes titled "Slide 2" and "Slide 3", and the word "adssadf" in the header.</li>
-    <li><b>Visible typos and a stray link:</b> "Finance &amp; Develpment Co." and "Caribbean Premoum Motors", and a "Vehicles" menu link that points to bbc.com.</li>
+  <p>Clarke’s Court has been distilled at Woodlands since 1937, at what the company describes as the largest distillery in Grenada. Its range runs from Pure White to Old Grog and #37, it is preparing a UK trade launch, and it recruits regularly. Its website has not kept pace. As of October 2026:</p>
+  <ul class="list evidence">
+    <li><b>clarkescourtrum.com</b> shows a hosting company’s “Temporarily Disabled” page, over plain HTTP without an encrypted connection. The last working version of the site in the Internet Archive dates from about 2024.</li>
+    <li><b>clarkescourt.com</b> is a holding page for the UK trade launch, with no product information and no way to make an enquiry.</li>
+    <li>Visitors who want a <b>distillery tour</b> have no way to see times or book; the old site only gave a phone number.</li>
+    <li>Importers and distributors have <b>no trade or export enquiry</b> route at all, at the moment the brand is looking for new markets.</li>
+    <li>Vacancies (sales and marketing manager, blending technician, warehouse assistant) are advertised on news sites with an email address for CVs, so applications land in a general inbox.</li>
   </ul>
-  <p class="src">Sources: the hadeedmotors.com home page and its HTTPS certificate, checked on 23 October 2026; Business View Caribbean, April 2016, p. 63.</p>
-  <p>This proposal replaces the site with one that matches the dealership: a fast, mobile-first showroom for new and pre-owned stock; five online request flows that each give the customer a reference number; and a sales desk where every lead has an owner, a status and a two-hour call-back target. A working demo is already built and can be shown live, on a laptop or a phone, at your convenience.</p>
+  <p>This proposal replaces all of that with one system on clarkescourtrum.com: a public website for drinkers, visitors, buyers and job seekers, and a back office where each team answers its own requests. A complete working demo has been built from the distillery’s own published information, and it can be shown live.</p>
   <div class="stat-grid">
-    <div class="stat"><b>${String(SCREEN_COUNT).split('').map((d) => `<i>${d}</i>`).join('')}</b><span>screens designed, built and shown in this proposal</span></div>
-    <div class="stat"><b><i>0</i><i class="hl">6</i></b><span>online forms, each issuing a reference number</span></div>
-    <div class="stat"><b><i>0</i><i>4</i></b><span>staff roles, each seeing only its own leads</span></div>
-    <div class="stat"><b>${TESTS.split('').map((d) => `<i>${d}</i>`).join('')}</b><span>automated tests run before every release</span></div>
+    <div class="stat"><b>40+</b><span>pages and screens in the working demo</span></div>
+    <div class="stat"><b>13</b><span>rums, each with its sourced facts</span></div>
+    <div class="stat"><b>4</b><span>staff roles: admin, tours, trade, HR</span></div>
+    <div class="stat"><b>49</b><span>automated tests, run on every change</span></div>
   </div>
-  <h2>What Hadeed Motors gains</h2>
+  <h2>What the distillery gains</h2>
   <div class="cols">
-    <div class="card"><h3>Customers</h3><ul><li>Book a test drive or a service in two minutes, from a phone</li><li>See which workshop days still have space</li><li>Pre-qualify with FDC without sharing bank details</li></ul></div>
-    <div class="card"><h3>Sales, service and FDC</h3><ul><li>One inbox for every web request, split by role</li><li>Overdue leads flagged after two hours</li><li>Stock and photos updated by your own staff</li></ul></div>
+    <div class="card"><h3>Visitors and buyers</h3><ul><li>Tour places booked online, with a reference number</li><li>A real landing place for importers and duty-free buyers</li><li>The range and its story, told in the distillery’s own words</li></ul></div>
+    <div class="card"><h3>The teams at Woodlands</h3><ul><li>Each request goes to the team that handles it</li><li>One number to act on: requests waiting over a day</li><li>Applications and CVs kept private to HR</li></ul></div>
   </div>
   ${foot()}
 </section>
 
 <section class="page prose">
-  ${plate('02', 'At a glance')}
+  <p class="eyebrow">At a glance</p>
   <h1>What is included</h1>
-  <table class="feat"><thead><tr><th style="width:20%">Area</th><th>Features</th></tr></thead><tbody>
-    ${FEATURES.map(([a, f]) => `<tr><td><b>${esc(a)}</b></td><td><div class="pill-row">${f.map((x) => `<span class="pill">${esc(x)}</span>`).join('')}</div></td></tr>`).join('')}
+  <table class="feat"><tbody>
+    ${FEATURES.map(([a, f]) => `<tr><td>${esc(a)}</td><td><div class="pill-row">${f.map((x) => `<span class="pill">${esc(x)}</span>`).join('')}</div></td></tr>`).join('')}
   </tbody></table>
-  <h2>How a lead flows</h2>
-  <p>A customer books a test drive on a Jimny from the model page. The booking checks that the time is free, issues a reference such as <b>TD-26-00087</b>, emails the customer and alerts the sales inbox. In the sales desk the lead shows as New, with a call-back clock. A consultant assigns it, calls with one tap, logs the call and moves it through Appointment and Negotiating to Sold or Lost. A lost booking frees its slot for someone else. Service bookings follow the same path to the workshop calendar, and finance pre-qualifications go to the FDC pipeline, where only the finance team can open the ID and pay slips.</p>
-  <h2>Content and imagery</h2>
-  <p>The company facts, history, hours, model trims and FDC requirements are taken from hadeedmotors.com and fdcantigua.com. Nothing is invented: no prices, rates, stock, awards or testimonials. The hero is Hadeed Motors' own showroom photograph. The vehicle and Antigua photographs are licensed from Wikimedia Commons and credited on the site, ready to be replaced with your own. The demo stock and leads shown in these screenshots are clearly marked samples with fictitious names.</p>
+  <h2>How a tour booking works</h2>
+  <p>A visitor picks a day and a time from a week-by-week grid that shows the places left on every tour, says how many adults and under-18s are coming, and sends the form. Their places are held at once: the system counts guests against the tour’s capacity under a lock, so two parties booking the last places at the same moment can never both get them. The visitor gets a reference number on screen and by email, the tours team is alerted, and the booking appears on the tour calendar and the printable day sheet. A cancellation frees the places straight away.</p>
+  <h2>Content and data in the demo</h2>
+  <p>Facts come from the archived clarkescourtrum.com (product pages, “Our story”, the factory-tour page and company news, 2003–2021), vacancy notices on NOW Grenada (2023–2026), the Library of Congress sale particulars for the estate (1877) and the UK holding page at clarkescourt.com. Each rum page and timeline entry links its source. The bottle, range, heritage and launch photographs are the company’s own, recovered from the archived site; the rest are credited Wikimedia Commons images to be replaced. <b>Nothing is invented</b>: no prices, awards on product pages, statistics, testimonials or staff names. The vacancies are samples, and every booking, enquiry, applicant and CV in the screenshots is demo data.</p>
   ${foot()}
 </section>
 
 ${SECTIONS.map((sec) => `
-<section class="page dark-page divider">
-  ${plate(sec.code, sec.eyebrow, true)}
+<section class="page band divider">
+  <p class="eyebrow">${esc(sec.eyebrow)}</p>
   <h1>${esc(sec.title)}</h1>
-  <p class="intro">${esc(sec.intro)}</p>
+  <p>${esc(sec.intro)}</p>
   <ol>${sec.screens.map((s) => `<li>${esc(s[1])}</li>`).join('')}</ol>
-  <p class="note">Screens are from the working demo at 1440 pixels wide. Stock, leads, staff names and figures are sample data.</p>
-  <div class="ticks"></div>
 </section>
-${sec.screens.map((s) => screenPages(sec, s)).join('')}
+${packed[sec.id]}
 `).join('')}
 
+${PHONES.map((row, i) => `
 <section class="page">
-  <header class="shot-head"><div><p class="eyebrow">Responsive design</p><h2>Built for phones first</h2></div><p class="url">390 × 844</p></header>
-  <p style="margin:0 0 4px">Most customers will find Hadeed Motors on a phone. Every page adapts to a small screen, and a bar with Call and Test drive stays within thumb reach (WhatsApp is added once you have a WhatsApp number).</p>
-  ${phones([['m-home', 'Home'], ['m-vehicle', 'Pre-owned vehicle'], ['m-service', 'Service booking']])}
-  ${notes([['Thumb-sized buttons', 'Every button is at least 48 pixels tall, and a Call button stays at the foot of the screen while browsing.'], ['The right keyboard', 'Phone, mileage and year fields open the number pad; contact fields fill in from the phone\'s saved details.'], ['Light on data', 'Photos are served as WebP in three sizes, so a phone downloads the small one.']])}
+  <header class="shot-head"><div><p class="eyebrow">Responsive design${i ? ' · continued' : ''}</p><h2>${i ? 'Applications and the back office on a phone' : 'Built for phones first'}</h2></div></header>
+  <p style="margin:0 0 4px">${i ? 'Job seekers apply and upload a CV from a phone, and the tours team can confirm a booking from the factory floor.' : 'Most visitors arrive on a phone, many of them on a cruise or a hotel’s Wi-Fi. On small screens a bar with Call, Contact and Book a tour stays at the bottom of every public page.'}</p>
+  <div class="phones">${row.map(([k, c]) => `<figure><img src="${img(chunks[k].chunks[0])}" alt="${esc(c)}"><figcaption>${esc(c)}</figcaption></figure>`).join('')}</div>
   ${foot()}
-</section>
-<section class="page">
-  <header class="shot-head"><div><p class="eyebrow">Responsive design · continued</p><h2>Requests and the sales desk on a phone</h2></div><p class="url">390 × 844</p></header>
-  <p style="margin:0 0 4px">Consultants can check the call queue and call a customer back from the showroom floor, not only from a desk.</p>
-  ${phones([['m-test-drive', 'Test-drive booking'], ['m-admin-dashboard', 'Sales desk overview'], ['m-admin-lead', 'Lead, one-tap call']])}
-  ${notes([['Live slots', 'Only test-drive times and workshop days with space left can be picked.'], ['Overdue first', 'The overview opens on the leads that have waited more than two hours for a call.'], ['One tap to reply', 'Call, WhatsApp or email the customer straight from the lead.']])}
-  ${foot()}
-</section>
+</section>`).join('')}
 
 <section class="page prose">
-  ${plate('04', 'Technology, hosting & security')}
-  <h1>Built properly, hosted for you</h1>
+  <p class="eyebrow">Technology, hosting &amp; security</p>
+  <h1>Built on a standard, open platform</h1>
   <div class="cols">
-    <div class="card"><h3>Platform</h3><ul><li>Laravel 13 on PHP 8.3 with a MySQL database: open-source and widely supported, with no proprietary page builder</li><li>Tailwind CSS and Alpine.js; fonts served from your own site, not a third-party font service</li><li>No background servers needed; emails send directly</li><li>${TESTS} automated tests cover the forms, booking capacity, roles, document privacy and the estimator</li></ul></div>
-    <div class="card"><h3>Security and privacy</h3><ul><li>HTTPS enforced, with security headers on every page</li><li>ID, pay slips and customer photos are stored outside the public website and served only to signed-in staff with the right role</li><li>Each opening of a finance document is logged</li><li>Forms are rate-limited and spam-trapped; bank and card numbers are refused</li><li>Login throttling, hashed passwords and individual staff accounts</li></ul></div>
-    <div class="card"><h3>Speed and search</h3><ul><li>Responsive WebP photography; uploaded stock photos are resized automatically</li><li>XML sitemap, and schema.org data for the dealership, every car and every model</li><li>Old index.html?page= addresses redirect permanently to the new pages</li><li>Accessible: keyboard navigation, labelled forms, and status chips that pair an icon with text</li></ul></div>
-    <div class="card"><h3>Ownership</h3><ul><li>Your content, photos, domain and customer data are always yours</li><li>Staff manage stock, leads, users and settings themselves</li><li>Hosting, backups, monitoring and updates are handled by Code Canvas under the monthly plan</li></ul></div>
+    <div class="card"><h3>Platform</h3><ul><li>Laravel 13 on PHP 8.3 with a MySQL database: free, open-source and widely supported</li><li>No proprietary site builder or licence; any Laravel developer can maintain it</li><li>No background workers or extra servers required</li><li>49 automated tests cover every form, every staff role and tour capacity under the lock</li></ul></div>
+    <div class="card"><h3>Privacy</h3><ul><li>CVs are stored outside the public web folder and open only for HR and administrators</li><li>Every opening of a CV is recorded on the application</li><li>The tours and trade teams never see job applications</li><li>A privacy notice drafted for the company’s legal adviser</li></ul></div>
+    <div class="card"><h3>Security</h3><ul><li>HTTPS throughout, with security headers</li><li>Hashed passwords and individual staff accounts with roles; switched-off accounts are signed out</li><li>Spam protection and rate limits on every public form</li><li>Monthly patching and daily backups under the plan</li></ul></div>
+    <div class="card"><h3>Accessibility &amp; reach</h3><ul><li>17-pixel body text and 48-pixel buttons</li><li>Colour contrast checked to WCAG AA in light and dark themes</li><li>Every page and form works without JavaScript</li><li>Sitemap, structured data for rums and vacancies, and redirects from the old site’s addresses</li></ul></div>
   </div>
-  <h2>Emails included</h2>
-  <p>Every request sends the customer a confirmation with their reference number and what happens next, and alerts your chosen inboxes with a link to the lead. Finance details and documents are never emailed; they stay in the sales desk.</p>
+  <h2>Emails the system sends</h2>
+  <p>Tour booking received, with the slot, party and directions (visitor) and a new-booking alert (tours team); trade enquiry received (buyer) and alert (export team); application received (applicant) and alert to HR, without the CV attached; message received and alert. All are sent from the distillery’s own mailbox.</p>
   ${foot()}
 </section>
 
 <section class="page prose">
-  ${plate('05', 'Investment')}
+  <p class="eyebrow">Investment</p>
   <h1>The US$1,000 a month plan</h1>
   <div class="price">
     <div class="big"><div class="amt">US$1,000 <small>per month</small></div><p><b>US$0 for design and development.</b> No setup fee and no deposit. Invoiced in US dollars. Billing starts at the end of the month in which the site launches, prorated for the days it was live; monthly invoices are due within 14 days.</p></div>
@@ -438,45 +425,45 @@ ${sec.screens.map((s) => screenPages(sec, s)).join('')}
       <li>No minimum term. 30 days' notice by email from either side.</li>
       <li>Price fixed for the first 24 months.</li>
       <li>Optional annual prepayment at 10% off: US$10,800 a year.</li>
-      <li><b>Handover fee US$7,000, only if you leave.</b> It buys the website outright and moves it to hosting in Hadeed Motors' name. It is waived if Code Canvas stops trading.</li>
+      <li><b>Handover fee US$7,000, only if you leave.</b> It buys the website outright and moves it to hosting in Grenada Distillers' name. It is waived if Code Canvas stops trading.</li>
       <li>Your content, domain and data are always yours.</li>
     </ul>
     <h3 style="margin-top:8px">Quoted separately, only with your approval</h3><ul>
       <li>Work beyond 10 hours in a month: US$50 an hour, or a fixed quote</li>
-      <li>Online card payments, such as reservation deposits</li>
-      <li>SMS reminders for test drives and service</li>
-      <li>Integrations with a dealer management or stock system, or with FDC's loan system</li>
-      <li>A customer account portal; paid advertising and SEO campaigns; professional photography</li>
+      <li>Online shop and card payments, such as paid tours or gift orders</li>
+      <li>SMS reminders for tour bookings</li>
+      <li>Integrations with a stock, accounting or HR system</li>
+      <li>A distributor portal; paid advertising and SEO campaigns; professional photography</li>
     </ul></div>
   </div>
   <h2>Service levels</h2>
   <table class="sla"><thead><tr><th>Issue</th><th>Response</th><th>Fix target</th></tr></thead><tbody>
     <tr><td>Site down or forms not sending</td><td>1 hour, any day</td><td>4 hours</td></tr>
     <tr><td>Something on a page is broken</td><td>4 business hours</td><td>1 business day</td></tr>
-    <tr><td>Content changes (text, photos, hours, holidays)</td><td>Acknowledged in 1 business day</td><td>Done in 2 business days</td></tr>
+    <tr><td>Content changes (text, photos, vacancies, tour times, holidays)</td><td>Acknowledged in 1 business day</td><td>Done in 2 business days</td></tr>
   </tbody></table>
   ${foot()}
 </section>
 
 <section class="page prose">
-  ${plate('06', 'Timeline')}
+  <p class="eyebrow">Timeline</p>
   <h1>Six weeks to launch</h1>
   <div class="weeks">
     <div class="week"><b>Week 1</b><p>Kick-off, brand assets and content: your logo files, photos and confirmation of the facts on the site.</p></div>
     <div class="week"><b>Week 2</b><p>Revision round 1. Forms, emails and staff roles configured with your real addresses.</p></div>
-    <div class="week"><b>Week 3</b><p>Data and content load: real stock and photos, opening hours, public holidays and workshop capacity.</p></div>
+    <div class="week"><b>Week 3</b><p>Data and content load: the current range with strengths and notes, tour times and capacity, public holidays and open vacancies.</p></div>
     <div class="week"><b>Week 4</b><p>Revision round 2.</p></div>
-    <div class="week"><b>Week 5</b><p>Formal testing with your sales, service and FDC staff on every form and screen.</p></div>
+    <div class="week"><b>Week 5</b><p>Formal testing with your tours, export and HR staff on every form and screen.</p></div>
     <div class="week"><b>Week 6</b><p>Launch on HTTPS, redirects from the old addresses, Search Console, and staff training.</p></div>
   </div>
-  <h2>What we need from Hadeed Motors</h2>
+  <h2>What we need from Grenada Distillers</h2>
   <ul class="plain">
-    <li>Your logo as a vector file (the demo uses the HM mark from hadeedmotors.com, which is only 123 pixels wide) and any brand guidelines.</li>
-    <li>Photos of the showroom, team and current stock, or time for a short photo session.</li>
-    <li>The stock list with prices you are happy to publish, and confirmation of opening hours, public holidays and daily workshop capacity.</li>
-    <li>FDC's confirmation of the documents list and, if they wish, an indicative rate for the estimator.</li>
-    <li>The staff who need accounts and their roles, and the inboxes that should receive new-lead alerts.</li>
-    <li>Access to the hadeedmotors.com domain settings, and to your Google Business Profile and Analytics if they exist.</li>
+    <li>Your Clarke’s Court logo as a vector file and any brand guidelines (the demo uses a typographic stand-in).</li>
+    <li>Bottle shots and photos of the distillery, the steam engines, the cask room and the team, or time for a short photo session.</li>
+    <li>Confirmation of the range, strengths and tasting notes, the tour times and how many guests a tour takes, and your public holidays.</li>
+    <li>Which awards, if any, you want shown, and how the site should link to the UK trade site.</li>
+    <li>The staff who need accounts and their roles, and the inboxes that should receive tour, trade and HR alerts.</li>
+    <li>Access to the clarkescourtrum.com domain settings, and to your Google Business Profile and social accounts if they exist.</li>
   </ul>
   <h2>When billing starts</h2>
   <p>Not on signing. The build, both revision rounds, testing and the preview site cost nothing. Billing starts at the end of the month in which the site launches, prorated for the days it was live. Nothing goes live until you approve it in writing.</p>
@@ -484,17 +471,17 @@ ${sec.screens.map((s) => screenPages(sec, s)).join('')}
 </section>
 
 <section class="page prose">
-  ${plate('07', 'Next steps')}
+  <p class="eyebrow">Next steps</p>
   <h1>From proposal to launch</h1>
   <ol class="plain" style="padding-left:18px">
-    <li style="margin:5px 0"><b>See the demo live.</b> We walk through the website and the sales desk together, on a laptop and a phone.</li>
+    <li style="margin:5px 0"><b>See the demo live.</b> We walk through the website and the back office together, on a laptop and a phone.</li>
     <li style="margin:5px 0"><b>Tell us what to change.</b> Pages, wording, roles or the request flows; revision round 1 opens straight away.</li>
     <li style="margin:5px 0"><b>Sign a one-page agreement</b> with the terms in this proposal: US$1,000 a month, month to month on 30 days' notice, US$0 build cost, and a US$7,000 handover fee only if you leave.</li>
     <li style="margin:5px 0"><b>Kick-off the same week</b>, with launch six weeks later.</li>
   </ol>
-  <div class="card" style="margin-top:18px; max-width:4.6in">
+  <div class="card contact">
     <h3>Contact</h3>
-    <p style="margin:0">Keron Lewis, Director<br>Code Canvas Consultants Ltd, Port of Spain<br>codecanvastt.com · +1 868 466-CODE<br><a href="mailto:info@codecanvastt.com">info@codecanvastt.com<br>Book a call: calendly.com/keronlewis/30min</a></p>
+    <p style="margin:0">Keron Lewis, Director<br>Code Canvas Consultants Ltd, Port of Spain<br>codecanvastt.com · +1 868 466-CODE<br><a href="mailto:info@codecanvastt.com">info@codecanvastt.com</a><br>Book a call: <a href="https://calendly.com/keronlewis/30min">calendly.com/keronlewis/30min</a></p>
   </div>
   <div style="margin-top:auto; margin-bottom:12px">${WORDMARK(false)}</div>
   ${foot()}
@@ -502,7 +489,6 @@ ${sec.screens.map((s) => screenPages(sec, s)).join('')}
 </body></html>`;
 
 fs.writeFileSync(OUT_HTML, html);
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--no-sandbox', '--allow-file-access-from-files'] });
 const page = await browser.newPage();
 await page.goto('file://' + OUT_HTML, { waitUntil: 'networkidle0' });
 await page.evaluate(() => document.fonts.ready);
