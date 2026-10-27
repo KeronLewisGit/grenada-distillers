@@ -1,62 +1,67 @@
-# Hadeed Motors
+# Clarke's Court – Grenada Distillers
 
-Website and sales desk for Hadeed Motors Ltd., the Nissan and Suzuki dealer on Old Parham Road, St John's, Antigua and Barbuda (since 1972).
+Website and back office for Grenada Distillers Ltd, makers of Clarke's Court rum at Woodlands, St George, Grenada (distilling on the site since 1937). The company's own site, clarkescourtrum.com, has served a "Temporarily Disabled" host page since about 2024, so the national rum has nowhere for tour bookings, export enquiries or job applications to land. This is the proposed replacement.
 
 ## What it does
 
-- **Public site.** Home, the new Nissan and Suzuki line-up with a page per model (trims and features from the dealership's own model pages), pre-owned stock with filters (make, body type, price, year, transmission) and photo galleries, finance with Finance & Development Co. (FDC), service and parts, trade-in, about, group companies, contact and hours, privacy notice, photo credits and a site map. Mobile-first, light and dark themes, and every page and filter works without JavaScript. Links from the old single-page site (`/index.html?page=vehicle&model=jimny` and the rest) redirect to the new pages.
-- **Five lead flows, each with a reference number and an email confirmation.**
-  - Test drive (`TD-26-00042`): a car from stock or the line-up, a weekday and a time; slots fill up (2 per slot by default) and close an hour before closing time.
-  - Service booking (`SV-…`): licence plate, odometer, service type, drop-off day and time. The form shows how many places are left each day and refuses a full day (daily capacity is set in Settings; claims run under a lock so two people can't take the last place).
-  - Parts request (`PT-…`): VIN (checked: 17 characters, never I, O or Q), the part, and an optional photo.
-  - Trade-in valuation (`TI-…`): the car, its condition and up to 6 photos.
-  - Finance pre-qualification (`FA-…`): residency, employment, income band, deposit, the car, optional ID and pay slips, and an explicit consent checkbox. It never asks for bank or card numbers and refuses them if sent.
-  - Plus a contact form (`EN-…`). All uploads go to the private disk, never the public web root.
-- **Loan estimator.** A clearly labelled estimate on `/finance` and on each priced car. It stays hidden until an administrator enters FDC's indicative rate in Settings. The browser and the server use the same formula (`resources/js/app.js` and `App\Support\LoanEstimator`), and the form also works without JavaScript.
-- **Sales desk** at `/admin`, with four roles:
-  - **Admin**: everything except opening finance documents.
-  - **Sales**: test drives, trade-ins, enquiries and finance leads (without the income details), plus inventory.
-  - **Service**: service bookings, parts and enquiries, plus the workshop calendar.
-  - **Finance**: finance applications only, and the only role that can open ID and pay slips. Every time a document is opened, it is logged on the lead's timeline.
+- **Public site.** An age check first (18+, the legal drinking age in Grenada; a server-side redirect, so it works without JavaScript), then home, the rum range with a page per rum, heritage with a sourced timeline, distillery tours, trade and export, careers with a page per vacancy, contact and directions, privacy notice, photo credits and a site map. Mobile-first, light and dark themes, 17px body text, 48px buttons, and every page and form works without JavaScript. Addresses from the old site (`/products/aged/clarke-s-court-grog-rum`, `/about-us`, `/factorytour.aspx` and the rest) redirect with a 301.
+- **Rum pages show only sourced facts.** Every name, strength and tasting note comes from the distillery's own archived product pages, and each page links its sources. Where the old site gave no ABV or notes, the page says so instead of guessing. No awards, prices or sizes are shown on product pages (a test checks).
+- **Four request flows, each with a reference number and an email confirmation.**
+  - Tour booking (`TB-26-00042`): pick a day and time from a week-by-week grid that shows the places left on every tour. Capacity is counted in guests per tour (Settings), claimed under a lock so two parties can't take the last places, and cancelled bookings free their places. Public holidays are closed. Under-18s can come but don't taste.
+  - Trade and export enquiry (`TE-…`): company, country, type of business, markets, rums of interest, first-order size and licence status.
+  - Job application (`JA-…`): a vacancy or a general application, parish, experience, qualification and a CV upload (PDF or Word, 5 MB) to the private disk, with an explicit 12-month consent.
+  - Contact message (`EN-…`) with a topic.
+- **Back office** at `/admin`, with four roles:
+  - **Admin**: everything, including staff and settings.
+  - **Tours**: tour bookings and general enquiries, plus the tour calendar.
+  - **Trade**: trade enquiries and general enquiries.
+  - **HR**: job applications and vacancies only. Only HR and admins can open CVs, and every opening is logged on the application's timeline.
 
-  The dashboard leads with one number: leads nobody has called for more than 2 hours. It also shows trend tiles, the median time to first call, leads per day, a breakdown by type and the pipeline. The unified inbox has filters (type, status, assignee, overdue), search (press `/`) and CSV export. Each lead page has the status (new → contacted → appointment → negotiating → sold / lost), the assignee, the appointment, a notes timeline and one-tap call, WhatsApp or email. There is also a month calendar of workshop bookings against capacity, the finance pipeline board, inventory with multi-photo upload (resized to WebP by GD), cover photo, available / reserved / sold and featured flags, staff management and settings.
+  The dashboard leads with one number: requests nobody has answered for more than a working day. Below it are tiles (new requests vs the week before, median time to first reply, guests booked in the next 7 days, guests on today's tours against places, open trade enquiries and countries, applications to review), requests per day, a breakdown by type, a "reply next" queue and the next three days of tours. The inbox has filters (type, status, assignee, overdue), search (press `/`) and CSV export. Each request has statuses for its type (a tour goes new → confirmed → attended / no-show / cancelled; trade goes new → contacted → qualified → samples → signed / declined; an application goes new → reviewing → interview → offered → hired / declined), an assignee, a notes timeline and one-tap email, call or WhatsApp. There is a month tour calendar with a printable day sheet, vacancy management (a vacancy with applicants is closed, never deleted), staff management and settings.
 
 ## Requirements
 
-PHP 8.3 or 8.4 with GD, Composer 2, Node 20+ for building assets, and SQLite locally or MySQL in production.
+PHP 8.3 or 8.4, Composer 2, Node 20+ for building assets, and SQLite locally or MySQL in production.
 
 ## Local setup
 
 ```sh
 composer install
 cp .env.example .env && php artisan key:generate
-php artisan migrate --seeder=DemoSeeder   # demo staff, 9 sample vehicles, ~120 leads over 30 days
+php artisan migrate --seeder=DemoSeeder   # demo staff, 3 sample vacancies, ~200 requests over six weeks
 npm install && npm run build
-php artisan serve --port=8105
+php artisan serve --port=8106
 ```
 
-Demo logins all use the password `password`: `admin@hadeed.test`, `sales@hadeed.test`, `service@hadeed.test` and `finance@hadeed.test`. Every demo vehicle is marked "Sample listing" and shows "Call for price". No prices, rates or stock levels are invented.
+Demo logins all use the password `password`: `admin@clarkescourt.test`, `tours@clarkescourt.test`, `trade@clarkescourt.test` and `hr@clarkescourt.test`. Every demo vacancy is marked "Sample" and every demo request carries `details.demo`. The vacancy titles and duties follow vacancies Grenada Distillers advertised on NOW Grenada; the people, companies and numbers are made up. `DatabaseSeeder` only creates the first administrator from `ADMIN_*` in `.env`.
 
 ## Checks
 
 ```sh
-php artisan test                 # feature tests for every flow, roles, document access and capacity
+php artisan test                 # feature tests for every flow, role, policy and tour capacity under the lock
 vendor/bin/phpstan analyse       # Larastan level 6, analysed as PHP 8.3
 vendor/bin/pint --test
+node scripts/qa/crawl.mjs http://127.0.0.1:8106   # every page as every role, plus one of each form
+node scripts/qa/shots.mjs                          # phone and desktop screenshots, light and dark, overflow check
 ```
 
 ## Deploying
 
-See [INSTALL-HOSTINGER.md](INSTALL-HOSTINGER.md). `scripts/package-hostinger.sh` builds `dist/hadeed-hostinger.zip`, which extracts straight into `public_html/`, with the app in `hadeed-app/`.
+See [INSTALL-HOSTINGER.md](INSTALL-HOSTINGER.md). `scripts/package-hostinger.sh` builds `dist/grenada-distillers-hostinger.zip`, which extracts straight into `public_html/`, with the app in `gdl-app/`. `npm run proposal` (dev server on 8106 with demo data) builds the client proposal PDF in `dist/proposal/`.
 
 ## Before launch: confirm with the client
 
-- **Contact details.** The phone (268-481-2500), email and hours come from hadeedmotors.com, which lists the same number for sales, service and parts. Ask for department extensions and a WhatsApp Business number (`HADEED_WHATSAPP`).
-- **The line-up** in `config/hadeed.php`: Frontier, Grand Vitara, Baleno, Fronx, S-Presso, Jimny, S-Cross, XL7 and Carry, taken from the current site's model menu. Trim features are copied from its model pages. Trims that only had placeholder text there are left out.
-- **Prices.** Nothing is priced. The old site's 2021 data file had "MinPrice" figures, but they are five years old and have no currency, so they are not used.
-- **Finance.** The FDC process and document list come from fdcantigua.com. The indicative rate stays blank until FDC approves a figure for publication.
-- **Group companies.** HML Autos Ltd. needs a one-line description and link. Caribbean Premium Motors (BMW) links to its Facebook page.
-- **Public holidays** in `hadeed.closed_dates`, for the online booking calendar.
-- **Photos.** The showroom photo is the dealership's own (from hadeedmotors.com). The vehicle and Antigua photos are Creative Commons images from Wikimedia Commons, credited on `/photo-credits`. Replace them with photos of real stock and of the showroom.
-- **Logo.** The HM monogram uses the red and blue sampled from the current logo. Swap in the original artwork.
-- **Privacy notice**: a draft for the client's legal adviser.
+Everything below came from public sources and has not been confirmed by Grenada Distillers.
+
+- **Contact details.** The phone, (473) 444-5363, is the tours and office number on the archived site (2006–2014). The email shown, `assistsect@clarkescourtrum.com`, is the address on every GDL vacancy notice on NOW Grenada (2023–25); a general `info@` mailbox is better for the public site (`GDL_EMAIL`). `gm@clarkescourtrum.com` appears in a 2021 press release. No WhatsApp number is published (`GDL_WHATSAPP`). The Facebook (`clarkes.court`) and Instagram (`clarkescourtrum`) links are from the 2014 site.
+- **Hours and tours.** Office and factory hours (8am to 4pm, Monday to Friday) and the tour description (about fifteen minutes in the factory, steam engines from as early as 1886, then a tasting at the Hospitality Centre) come from the archived site. The four daily start times, 20 guests per tour and the online party limit of 12 are proposals. Tours were also offered to groups at weekends; that goes through the contact form for now.
+- **Public holidays** in `gdl.closed_dates`, for the tour calendar.
+- **The range.** The thirteen rums in `config/gdl.php` are the ones on the archived product pages (2014–2019). Ask which are still made, and for ABV and notes for Old Grog Extra Old, #37, Passion Fruit, Rhythm Coconut, Mojito and Camerhogne. The 2021 press release mentions 21 spirits and three new cream and coffee liqueurs that are not listed. Bottle sizes are shown only where the source gave one (Black Gold, 750 ml).
+- **Awards.** The old product pages list medals (Old Grog: World Spirits Awards gold 2006, San Francisco World Spirits Competition bronze 2005, Beverage Testing Institute gold 2003) and company news reports "Distillery of the Year (Gold)" at the World Spirits Award in 2020 and 2021. Only the Distillery of the Year line appears, on the heritage timeline, with its source. Confirm before adding any medal to a product page.
+- **Heritage.** The 1670s, 1763, 1824 and 1937 entries come from the company's own "Our story" page; the 1771 inventory and the 1795 uprising from research by Dr S. D. Smith (University of York) published on the 2003 site; 1877 from the sale particulars in the Library of Congress. Ask the company to review the wording on enslaved labour and the 1795 uprising.
+- **People.** No staff are named on the site. The 2016 product page credits the Black Gold concept to the chairman (Leroy Neckles in the sources, chairman and CEO in 2010); the site says "the chairman of the board". Fred Antoine was General Manager in 2010; a later GM (Lester Andall, about 2017) could not be confirmed. The September 2026 Sales and Marketing Manager vacancy was handled by J's HR Consultancy.
+- **ISO 22000** certification since 2017 (re-certified 2020) is from company news; confirm it is current.
+- **UK launch.** clarkescourt.com is a UK holding page ("Grenada's Clarke's Court is coming to the UK trade. We're building this brochure with Webwight."). Agree how this site and the UK trade site link to each other.
+- **Photos.** The hero, range, bottle, heritage and launch photos are the company's own, recovered from the archived site at low resolution; ask for originals and a Black Gold bottle shot (the nutmeg photo stands in). The barrel warehouse (Foursquare, Barbados), column still and steam engine are generic Wikimedia Commons stand-ins, credited and flagged on `/photo-credits`. Replace them with photography of Woodlands.
+- **Logo.** The wordmark is typographic. Ask for the Clarke's Court logo artwork as a vector.
+- **Privacy notice** is a draft for the company's legal adviser, including the retention periods.
