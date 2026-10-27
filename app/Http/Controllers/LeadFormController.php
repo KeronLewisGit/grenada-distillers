@@ -68,28 +68,28 @@ class LeadFormController extends Controller
         // The slot's places are checked and claimed under a lock, so two parties can't both take the last ones.
         try {
             return Cache::lock('tour-slot:'.$date.' '.$time, 10)->block((int) config('gdl.tours.lock_wait', 5), function () use ($data, $request, $date, $time, $guests) {
-            $left = Tours::remaining($date, $time);
-            if ($left < $guests) {
-                return back()->withInput()->withErrors(['slot' => $left === 0
-                    ? 'That tour has just filled up. Please choose another time.'
-                    : "That tour has only {$left} ".($left === 1 ? 'place' : 'places').' left. Choose another time or a smaller party.'])->withFragment('book');
-            }
-            LeadIntake::create(LeadType::Tour, $this->contactFields($data) + [
-                'country' => $data['country'] ?? null,
-                'visit_date' => $date,
-                'visit_time' => $time,
-                'guests' => $guests,
-                'message' => $data['message'] ?? null,
-                'details' => [
-                    'adults' => (int) $data['adults'],
-                    'children' => (int) ($data['children'] ?? 0),
-                    'group_type' => $data['group_type'],
-                    'staying' => $data['staying'] ?? null,
-                    'access' => $data['access'] ?? null,
-                ],
-            ], [], $request);
+                $left = Tours::remaining($date, $time);
+                if ($left < $guests) {
+                    return back()->withInput()->withErrors(['slot' => $left === 0
+                        ? 'That tour has just filled up. Please choose another time.'
+                        : "That tour has only {$left} ".($left === 1 ? 'place' : 'places').' left. Choose another time or a smaller party.'])->withFragment('book');
+                }
+                LeadIntake::create(LeadType::Tour, $this->contactFields($data) + [
+                    'country' => $data['country'] ?? null,
+                    'visit_date' => $date,
+                    'visit_time' => $time,
+                    'guests' => $guests,
+                    'message' => $data['message'] ?? null,
+                    'details' => [
+                        'adults' => (int) $data['adults'],
+                        'children' => (int) ($data['children'] ?? 0),
+                        'group_type' => $data['group_type'],
+                        'staying' => $data['staying'] ?? null,
+                        'access' => $data['access'] ?? null,
+                    ],
+                ], [], $request);
 
-            return to_route('thanks');
+                return to_route('thanks');
             });
         } catch (LockTimeoutException) {
             return back()->withInput()->withErrors(['slot' => 'Lots of people are booking that tour right now. Please press Book again in a moment.'])->withFragment('book');

@@ -119,11 +119,12 @@ class LeadFlowsTest extends TestCase
         $this->post('/careers/apply', $this->applicationData(['cv' => UploadedFile::fake()->create('cv.exe', 10, 'application/x-msdownload')]))->assertSessionHasErrors('cv');
         $this->post('/careers/apply', $this->applicationData(['cv' => UploadedFile::fake()->create('cv.pdf', 6000, 'application/pdf')]))->assertSessionHasErrors(['cv' => 'Your CV must be 5 MB or smaller.']);
         $this->post('/careers/apply', $this->applicationData(['consent' => null]))->assertSessionHasErrors('consent');
+        // (Five tries per email a minute: the vacancy checks below use a second address.)
 
         $closed = $this->job(['slug' => 'accounts-clerk', 'title' => 'Accounts Clerk', 'status' => JobStatus::Closed]);
-        $this->post('/careers/apply', $this->applicationData(['job' => (string) $closed->id]))->assertSessionHasErrors('job');
+        $this->post('/careers/apply', $this->applicationData(['job' => (string) $closed->id, 'email' => 'second@example.com']))->assertSessionHasErrors('job');
         $past = $this->job(['slug' => 'old', 'title' => 'Old', 'closes_on' => today()->subDay()]);
-        $this->post('/careers/apply', $this->applicationData(['job' => (string) $past->id]))->assertSessionHasErrors('job');
+        $this->post('/careers/apply', $this->applicationData(['job' => (string) $past->id, 'email' => 'second@example.com']))->assertSessionHasErrors('job');
         $this->assertSame(0, Lead::count());
     }
 

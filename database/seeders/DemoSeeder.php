@@ -18,6 +18,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Pitch demo and local work: php artisan migrate:fresh --seeder=DemoSeeder
@@ -77,7 +78,7 @@ class DemoSeeder extends Seeder
                 "Valid driver's licence (F & D class) with a clean record\nAble to lift moderate to heavy goods\nAt least 2 years in a manufacturing or warehouse environment", null],
         ];
 
-        return array_map(fn (array $r, int $i) => JobPosting::updateOrCreate(['slug' => \Illuminate\Support\Str::slug($r[0])], [
+        return array_map(fn (array $r, int $i) => JobPosting::updateOrCreate(['slug' => Str::slug($r[0])], [
             'title' => $r[0], 'department' => $r[1], 'employment_type' => EmploymentType::FullTime, 'status' => JobStatus::Open,
             'location' => 'Woodlands, St George', 'closes_on' => $r[5], 'summary' => $r[2], 'duties' => $r[3], 'requirements' => $r[4], 'is_demo' => true,
         ]), $rows, array_keys($rows));

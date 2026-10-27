@@ -123,7 +123,7 @@ return [
         ],
         'page' => [
             'photo' => 'casks',
-            'lead' => "Grenada Distillers ships white, dark, aged and flavoured rums and liqueurs from Woodlands. Importers, distributors, duty-free and bars can reach the export team here and get an answer from a named person.",
+            'lead' => 'Grenada Distillers ships white, dark, aged and flavoured rums and liqueurs from Woodlands. Importers, distributors, duty-free and bars can reach the export team here and get an answer from a named person.',
             'points' => [
                 ['icon' => 'barrel', 'title' => 'A full range from one distillery', 'text' => 'White and overproof rum, dark and aged rums, flavoured rums and spiced liqueurs, all made at Woodlands since 1937.'],
                 ['icon' => 'shield', 'title' => 'Food-safety certified', 'text' => 'Grenada Distillers has held ISO 22000 food-safety certification since 2017 (company announcement, July 2020).'],
