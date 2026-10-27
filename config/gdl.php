@@ -13,7 +13,7 @@ return [
     'description' => "Clarke's Court rum is made by Grenada Distillers Ltd at Woodlands, St George, Grenada. See the range, book a distillery tour, send a trade or export enquiry, or apply for a job.",
     'footer_blurb' => "Grenada's rum, distilled at Woodlands, St George, on the old Grenada Sugar Factory estate since 1937.",
     'credits_lead' => 'Where each photograph comes from, and the licence it is used under.',
-    'directions' => "The distillery is in the Woodlands valley in the south of St George, a short drive inland from Clarke's Court Bay and about 15 minutes from Grand Anse and the airport. Taxi drivers know it as the Clarke's Court factory.",
+    'directions' => "The distillery is in the Woodlands valley in the south of St George, a short drive inland from Clarke's Court Bay.",
     'contact_photo' => 'bay',
     'founded' => 1937,
     // Legal drinking age in Grenada.
@@ -24,11 +24,19 @@ return [
     // (473) 444-5363 is the tours and office number on the archived clarkescourtrum.com (2006-2014). UNVERIFIED today.
     'phone' => env('GDL_PHONE', '473-444-5363'),
     'whatsapp' => env('GDL_WHATSAPP', ''),
-    // assistsect@ is the address on every GDL vacancy notice on NOW Grenada, 2023-25. A general
+    // assistsect@ is the address on every GDL vacancy notice on NOW Grenada, 2024-25. A general
     // info@ mailbox is recommended at launch. UNVERIFIED as the public address.
     'email' => env('GDL_EMAIL', 'assistsect@clarkescourtrum.com'),
-    // Who gets "new request" emails, comma separated.
+    // Who gets "new request" emails, comma separated: the general list, used for every request
+    // type that has no team inbox below.
     'notify' => env('GDL_NOTIFY_EMAIL', ''),
+    // Team inboxes per request type (comma separated). Set GDL_NOTIFY_HR so job applications
+    // reach HR only and never the general list.
+    'notify_teams' => [
+        'tour' => env('GDL_NOTIFY_TOURS', ''),
+        'trade' => env('GDL_NOTIFY_TRADE', ''),
+        'application' => env('GDL_NOTIFY_HR', ''),
+    ],
     'admin' => [
         'name' => env('ADMIN_NAME', 'Administrator'),
         'email' => env('ADMIN_EMAIL'),
@@ -126,7 +134,7 @@ return [
             'lead' => 'Grenada Distillers ships white, dark, aged and flavoured rums and liqueurs from Woodlands. Importers, distributors, duty-free and bars can reach the export team here and get an answer from a named person.',
             'points' => [
                 ['icon' => 'barrel', 'title' => 'A full range from one distillery', 'text' => 'White and overproof rum, dark and aged rums, flavoured rums and spiced liqueurs, all made at Woodlands since 1937.'],
-                ['icon' => 'shield', 'title' => 'Food-safety certified', 'text' => 'Grenada Distillers has held ISO 22000 food-safety certification since 2017 (company announcement, July 2020).'],
+                ['icon' => 'shield', 'title' => 'Food-safety certified', 'text' => 'Grenada Distillers was certified to ISO 22000 for food safety in 2017 and re-certified in 2020 (company announcement, July 2020).'],
                 ['icon' => 'globe', 'title' => 'Coming to the UK trade', 'text' => "Clarke's Court is preparing a UK trade launch. UK buyers can register their interest now.", 'link' => ['label' => 'clarkescourt.com (UK holding page)', 'url' => 'https://clarkescourt.com']],
             ],
         ],
@@ -194,7 +202,6 @@ return [
                 "Clarke's Old Grog is a premium sipping rum. It dates back to the early days when the finest of Grenada's rum was shipped to His Majesty George III of England. To identify the King's rum, the casks were marked G.R.O.G., short for Georgius Rex Old Grenada.",
                 'Appearance: copper gold. Aroma: a hint of smoky oak. Palate: tropical fruit and spice, with oak that lingers smoothly.',
             ],
-            'serve' => 'Neat or over ice.',
             'sources' => [['label' => "Clarke's Court Grog Rum, clarkescourtrum.com (archived 2015)", 'url' => 'https://web.archive.org/web/20150131201448/http://www.clarkescourtrum.com/products/aged/clarke-s-court-grog-rum']],
         ],
         'old-grog-extra-old' => [
@@ -205,12 +212,11 @@ return [
         ],
         'number-37' => [
             'name' => '#37', 'family' => 'aged', 'style' => 'Double-matured golden rum', 'abv' => null, 'photo' => 'bottle-37',
-            'summary' => 'A double-matured golden rum launched at the distillery in April 2010 and named for 1937, the year the distillery began.',
+            'summary' => 'A double-matured golden rum, launched at the distillery in April 2010 as a signed limited edition.',
             'notes' => [
                 "#37 was launched on 16 April 2010 with a tasting at Nick's Barrel House, the retail and visitor centre at the distillery. It was the thirteenth product in the Clarke's Court line.",
                 'It is a double-matured golden rum. At launch, limited-edition bottles were offered numbered and signed by the company\'s chairman.',
             ],
-            'serve' => 'A sipping rum: neat, or with a single cube of ice.',
             'sources' => [
                 ['label' => "Clarke's Court launches #37, company news, April 2010 (archived)", 'url' => 'https://web.archive.org/web/20110620204239/http://www.clarkescourtrum.com/news/2010/37-launched-21-04-10.html'],
                 ['label' => "Clarke's Court #37, clarkescourtrum.com (archived 2014)", 'url' => 'https://web.archive.org/web/20141127132630/http://www.clarkescourtrum.com/products/specialty/clarke-s-court-37'],
@@ -220,7 +226,6 @@ return [
             'name' => 'Special Dark', 'family' => 'aged', 'style' => 'Golden rum', 'abv' => 40, 'photo' => 'bottle-special-dark',
             'summary' => 'A warm, mellow golden rum, blended and aged in oak bourbon barrels.',
             'notes' => ['A warm, mellow rum, golden in colour, blended and aged in traditional oak bourbon barrels. Special Dark is 40% alcohol by volume and well loved by those who prefer a gentler rum.'],
-            'serve' => 'Over ice, or with cola or ginger beer.',
             'sources' => [['label' => "Clarke's Court Special Dark Rum, clarkescourtrum.com (archived 2015)", 'url' => 'https://web.archive.org/web/20150131201523/http://www.clarkescourtrum.com/products/dark/clarke-s-court-special-dark-rum']],
         ],
         'black-gold' => [
@@ -244,7 +249,6 @@ return [
             'name' => 'Superior Light', 'family' => 'white', 'style' => 'Light white rum', 'abv' => 40, 'photo' => 'bottle-superior-light',
             'summary' => 'A light, mellow rum with a clean, fresh taste, for people who prefer lighter rums.',
             'notes' => ['Superior Light is aged and has a clean, fresh taste. It is light, mellow and 40% alcohol by volume: the one for those who prefer lighter rums.'],
-            'serve' => 'With soda and lime, or in a daiquiri.',
             'sources' => [['label' => "Clarke's Court Superior Light Rum, clarkescourtrum.com (archived 2015)", 'url' => 'https://web.archive.org/web/20150818191315/http://www.clarkescourtrum.com/products/light/clarke-s-court-superior-light-rum']],
         ],
         'rum-lemon' => [
@@ -258,7 +262,6 @@ return [
             'name' => 'Sorrel', 'family' => 'flavoured', 'style' => 'Sorrel and spice rum', 'abv' => 20, 'photo' => 'bottle-sorrel',
             'summary' => "Grenadian sorrel and spices blended with the distillery's own rum: light and mellow, at 20%.",
             'notes' => ["A blend of indigenous extracts of sorrel and the spices of Grenada with the distillery's own distilled rum, giving a light, mellow drink. Rum Sorrel is 20% alcohol by volume."],
-            'serve' => 'Chilled, or as the base for a sorrel punch.',
             'sources' => [['label' => "Clarke's Court Sorrel, clarkescourtrum.com (archived 2014)", 'url' => 'https://web.archive.org/web/20141115173425/http://www.clarkescourtrum.com/products/flavored/clarke-s-court-sorrel']],
         ],
         'passion-fruit' => [
@@ -283,7 +286,7 @@ return [
             'name' => 'Camerhogne Spice Liqueur', 'family' => 'flavoured', 'style' => 'Spiced rum liqueur', 'abv' => null, 'photo' => 'bottle-camerhogne',
             'summary' => 'A rich, spicy rum liqueur flavoured with nutmeg, named with the Amerindian name for Grenada.',
             'notes' => ['Camerhogne is the Amerindian name for Grenada, and lends itself to this rich spice rum liqueur. Its smooth, spicy and fruity flavour is well balanced, with the island\'s nutmeg at its heart.'],
-            'serve' => 'Over ice, or in coffee.',
+            'serve' => 'On ice cream, or as an aperitif.',
             'sources' => [['label' => 'Camerhogne Spice Liqueur, clarkescourtrum.com (archived 2014)', 'url' => 'https://web.archive.org/web/20141127132337/http://www.clarkescourtrum.com/products/dark/camerhogne-spice-liqueur']],
         ],
     ],
@@ -311,7 +314,7 @@ return [
         'title' => "The story of Clarke's Court",
         'lead' => 'A Woodlands sugar estate with three centuries of history, and a distillery that has made rum on it since 1937.',
         'story' => [
-            "Clarke's Court rum takes its name from Clarke's Court Bay in Woodlands, a few minutes from the distillery. The name is said to come from two sources. Dutch colonists who came to Grenada in the 1670s seized land around the bay and called it Court Bay; the French later took it back. Between 1763 and around 1801, Gedney Clarke bought parcels of land from the French totalling about 780 acres, the land known today as the Woodlands Estate, and with it Court Bay.",
+            "Clarke's Court rum takes its name from Clarke's Court Bay in Woodlands, a few minutes from the distillery. The name is said to come from two sources. Dutch colonists who came to Grenada in the 1670s seized land around the bay and called it Court Bay; the French later took it back. From 1763, Gedney Clarke bought parcels of land from the French totalling about 780 acres, the land known today as the Woodlands Estate, and with it Court Bay.",
             'Before that, the bay was known as Watering Bay, a name from the Caribs, who were active here because of its freshwater springs.',
             'Like every sugar estate in the Caribbean, Clarke\'s Court was built on the labour of enslaved Africans. An inventory from 1771 lists 211 enslaved people on the plantation, which then ran two sugar works with a boiling house, curing house and still house. In 1795 the estate was the scene of fighting during the uprising in Grenada.',
             "The distillery has been in operation since 1937 and is the largest in Grenada. Before the name Clarke's Court was established, its rums were sold as Tradewinds and Red Neck.",
@@ -321,17 +324,20 @@ return [
         'side_caption' => "Particulars for the sale of the Clarke's Court estate, 28 November 1877. Library of Congress, via Wikimedia Commons.",
         'timeline' => [
             ['year' => '1670s', 'title' => 'Court Bay', 'text' => 'Dutch colonists seize land around the bay in Woodlands and name it Court Bay, according to the distillery\'s own history. The French later recapture it.', 'source' => ['label' => 'Our story, clarkescourtrum.com (archived 2014)', 'url' => 'https://web.archive.org/web/20141127132144/http://www.clarkescourtrum.com/about-us']],
-            ['year' => '1763', 'title' => 'Gedney Clarke buys the land', 'text' => 'From 1763 to around 1801 Gedney Clarke buys parcels of land from the French, about 780 acres in all, including Court Bay: the origin of the name Clarke\'s Court.', 'source' => ['label' => 'Our story, clarkescourtrum.com (archived 2014)', 'url' => 'https://web.archive.org/web/20141127132144/http://www.clarkescourtrum.com/about-us']],
+            ['year' => '1763', 'title' => 'Gedney Clarke buys the land', 'text' => 'From 1763 Gedney Clarke buys parcels of land from the French, about 780 acres in all, including Court Bay: the origin of the name Clarke\'s Court.', 'source' => ['label' => 'Our story, clarkescourtrum.com (archived 2014)', 'url' => 'https://web.archive.org/web/20141127132144/http://www.clarkescourtrum.com/about-us']],
             ['year' => '1771', 'title' => 'An estate of enslaved labour', 'text' => 'An inventory lists 211 enslaved people on the plantation and two sugar works, an upper works driven by a stone windmill and a lower works by a cattle mill.', 'source' => ['label' => 'Research by Dr S. D. Smith, University of York, published on clarkescourtrum.com', 'url' => 'https://web.archive.org/web/20030204123529/http://www.clarkescourtrum.com/effect/morehistory.htm']],
-            ['year' => '1795', 'title' => 'The uprising', 'text' => 'Clarke\'s Court is the scene of fighting during the revolt in Grenada; crops on the estate are not fully harvested again until 1799.', 'source' => ['label' => 'Research by Dr S. D. Smith, University of York, published on clarkescourtrum.com', 'url' => 'https://web.archive.org/web/20030204123529/http://www.clarkescourtrum.com/effect/morehistory.htm']],
+            ['year' => '1795', 'title' => 'The uprising', 'text' => 'Clarke\'s Court is the scene of fighting during the revolt in Grenada; a full harvest on the estate is not expected again before 1799.', 'source' => ['label' => 'Research by Dr S. D. Smith, University of York, published on clarkescourtrum.com', 'url' => 'https://web.archive.org/web/20030204123529/http://www.clarkescourtrum.com/effect/morehistory.htm']],
             ['year' => '1824', 'title' => 'Sugar cane on 770 acres', 'text' => 'A survey shows the estate has passed to John Ross, who holds 770 acres, used mostly to grow sugar cane.', 'source' => ['label' => 'Our story, clarkescourtrum.com (archived 2014)', 'url' => 'https://web.archive.org/web/20141127132144/http://www.clarkescourtrum.com/about-us']],
             ['year' => '1877', 'title' => 'The estate is sold', 'text' => "Clarke's Court, \"containing 770 acres or thereabouts\", is offered for sale with its fixtures, machinery and stock on 28 November 1877.", 'source' => ['label' => 'Sale particulars, Library of Congress (Wikimedia Commons)', 'url' => 'https://commons.wikimedia.org/wiki/File:Grenada,_particulars_of_a_valuable_Sugar_Estate_-_known_as_Clarke%27s_Court,_in_the_Island_of_Grenada,_containing_770_acres_or_thereabouts,_together_with_the_fixtures,_machinery,_and_live_and_dead_stock_LOC_2016586624-1.jpg']],
             ['year' => '1886', 'title' => 'Steam power', 'text' => 'The oldest of the steam engines still on the site date from as far back as 1886. Visitors see them on the tour.', 'source' => ['label' => 'Factory tour, clarkescourtrum.com (archived 2006)', 'url' => 'https://web.archive.org/web/20091119045919/http://www.clarkescourtrum.com/factorytour.aspx']],
-            ['year' => '1937', 'title' => 'The distillery opens', 'text' => 'Rum production begins at Woodlands. The factory, also home to the Grenada Sugar Factory, becomes the largest distillery in Grenada.', 'source' => ['label' => 'Our story, clarkescourtrum.com (archived 2014)', 'url' => 'https://web.archive.org/web/20141127132144/http://www.clarkescourtrum.com/about-us']],
-            ['year' => '2010', 'title' => '#37 is launched', 'text' => "A double-matured golden rum named for the founding year, launched at Nick's Barrel House, the distillery's visitor centre.", 'source' => ['label' => 'Company news, April 2010 (archived)', 'url' => 'https://web.archive.org/web/20110620204239/http://www.clarkescourtrum.com/news/2010/37-launched-21-04-10.html']],
+            ['year' => '1937', 'title' => 'The distillery opens', 'text' => 'Rum production begins at the Grenada Sugar Factory at Woodlands, today what the company calls the largest and best-known distillery in Grenada.', 'source' => ['label' => 'Our story, clarkescourtrum.com (archived 2014)', 'url' => 'https://web.archive.org/web/20141127132144/http://www.clarkescourtrum.com/about-us']],
+            ['year' => '2010', 'title' => '#37 is launched', 'text' => "A double-matured golden rum, the distillery's thirteenth product, launched at Nick's Barrel House, the distillery's visitor centre.", 'source' => ['label' => 'Company news, April 2010 (archived)', 'url' => 'https://web.archive.org/web/20110620204239/http://www.clarkescourtrum.com/news/2010/37-launched-21-04-10.html']],
             ['year' => '2015', 'title' => 'Black Gold', 'text' => 'A premium rum infused with Grenada nutmeg joins the range.', 'source' => ['label' => 'Black Gold launch, company news (archived)', 'url' => 'https://web.archive.org/web/20180602032601/http://www.clarkescourtrum.com/news/article/-black-gold-launch']],
             ['year' => '2017', 'title' => 'Food-safety certified', 'text' => 'Grenada Distillers is certified to the ISO 22000 food-safety management standard, and re-certified in 2020.', 'source' => ['label' => 'ISO re-certification, company news, July 2020 (archived)', 'url' => 'https://web.archive.org/web/20200927081423/http://www.clarkescourtrum.com/news/article/-grenada-distillers-limited-announces-recertification-under-the-international-organization-for-standards-iso-']],
-            ['year' => '2020', 'title' => 'Distillery of the Year', 'text' => 'Grenada Distillers is named Distillery of the Year (Gold) at the World Spirits Award in Austria, a title the company reported again in 2021.', 'source' => ['label' => 'Company news, April 2020 (archived)', 'url' => 'https://web.archive.org/web/20200803233503/http://www.clarkescourtrum.com/news/article/-distillery-of-the-year-gold-2020']],
+            ['year' => '2020', 'title' => 'Distillery of the Year', 'text' => 'Grenada Distillers is named Distillery of the Year (Gold) in the rum category at the World Spirits Award in Austria, and again in 2021.', 'sources' => [
+                ['label' => 'Company news, April 2020 (archived)', 'url' => 'https://web.archive.org/web/20200803233503/http://www.clarkescourtrum.com/news/article/-distillery-of-the-year-gold-2020'],
+                ['label' => 'Wee FM Grenada, April 2021', 'url' => 'https://www.weefmgrenada.com/clarkes-court-rum-prodcuts-continue-to-shine-brightly-on-the-world-stage/'],
+            ]],
         ],
         'gallery' => [
             ['photo' => 'mill-1950s', 'alt' => 'The Woodlands mill and chimney in the 1950s, behind a field of cane', 'caption' => 'The new mill in the 1950s.'],

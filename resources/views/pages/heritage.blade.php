@@ -22,7 +22,8 @@
                     <div>
                         <h3 class="text-lg font-bold">{{ $row['title'] }}</h3>
                         <p class="mt-1 measure text-ink-2">{{ $row['text'] }}</p>
-                        @if (! empty($row['source']))<p class="mt-1 text-sm text-ink-3">Source: <a class="text-link" href="{{ $row['source']['url'] }}" rel="noopener" target="_blank">{{ $row['source']['label'] }}</a></p>@endif
+                        @php($sources = $row['sources'] ?? (empty($row['source']) ? [] : [$row['source']]))
+                        @if ($sources)<p class="mt-1 text-sm text-ink-3">{{ count($sources) > 1 ? 'Sources' : 'Source' }}: @foreach ($sources as $src)<a class="text-link" href="{{ $src['url'] }}" rel="noopener" target="_blank">{{ $src['label'] }}</a>@if (! $loop->last); @endif @endforeach</p>@endif
                     </div>
                 </li>
             @endforeach

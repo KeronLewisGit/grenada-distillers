@@ -50,7 +50,7 @@ const CAPTIONS = {
     'A prompt for buyers that leads to the trade enquiry.',
   ],
   rum: [
-    'A rum page: the story and tasting notes in the distillery’s own words, a spec sheet, how it is served, and the archived source it came from. No awards, prices or sizes are shown unless the distillery confirms them.',
+    'A rum page: the story and tasting notes in the distillery’s own words, a spec sheet, a serving suggestion where the distillery gave one, and the archived source it came from. No awards, prices or sizes are shown unless the distillery confirms them.',
     'More from the same family, to keep visitors browsing.',
   ],
   heritage: [
@@ -129,7 +129,7 @@ const SECTIONS = [
 const FEATURES = [
   ['Public website', ['Phone-first, light and dark themes', 'Age check that works without JavaScript', 'A page per rum, sourced facts only', 'Heritage timeline with sources', 'Tour booking with live places', 'Trade & export enquiries', 'Careers with CV upload', 'Redirects from the old site’s addresses', 'Sitemap and structured data for search']],
   ['Back office', ['Four roles: admin, tours, trade, HR', 'Headline: requests waiting over a day', 'One inbox with filters, search and CSV', 'Per-type statuses and notes', 'Tour calendar and printable day sheet', 'Vacancy publishing', 'CVs for HR only, every opening logged', 'Editable tour capacity']],
-  ['Platform', ['Laravel 13 on PHP 8.3', 'Runs on standard shared hosting', 'Private file storage outside the web root', 'HTTPS, security headers, spam protection', '49 automated tests', 'Packaged installer and written guide']],
+  ['Platform', ['Laravel 13 on PHP 8.3', 'Runs on standard shared hosting', 'Private file storage outside the web root', 'HTTPS, security headers, spam protection', '65 automated tests', 'Packaged installer and written guide']],
 ];
 
 const PHONES = [
@@ -335,18 +335,18 @@ const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>
   <h1>Why rebuild now</h1>
   <p>Clarke’s Court has been distilled at Woodlands since 1937, at what the company describes as the largest distillery in Grenada. Its range runs from Pure White to Old Grog and #37, it is preparing a UK trade launch, and it recruits regularly. Its website has not kept pace. As of October 2026:</p>
   <ul class="list evidence">
-    <li><b>clarkescourtrum.com</b> shows a hosting company’s “Temporarily Disabled” page, over plain HTTP without an encrypted connection. The last working version of the site in the Internet Archive dates from about 2024.</li>
-    <li><b>clarkescourt.com</b> is a holding page for the UK trade launch, with no product information and no way to make an enquiry.</li>
+    <li><b>clarkescourtrum.com</b> shows a hosting company’s “Temporarily Disabled” page, over plain HTTP without an encrypted connection. The last working version of the site in the Internet Archive dates from mid-2023.</li>
+    <li><b>clarkescourt.com</b> is a holding page for the UK trade launch, with no product information and no enquiry form, only a UK telephone number.</li>
     <li>Visitors who want a <b>distillery tour</b> have no way to see times or book; the old site only gave a phone number.</li>
     <li>Importers and distributors have <b>no trade or export enquiry</b> route at all, at the moment the brand is looking for new markets.</li>
-    <li>Vacancies (sales and marketing manager, blending technician, warehouse assistant) are advertised on news sites with an email address for CVs, so applications land in a general inbox.</li>
+    <li>Vacancies (sales and marketing manager, blending technician, warehouse assistant) are advertised on news sites, with CVs sent by email or through a recruiter, so there is no one place where applications are kept and tracked.</li>
   </ul>
   <p>This proposal replaces all of that with one system on clarkescourtrum.com: a public website for drinkers, visitors, buyers and job seekers, and a back office where each team answers its own requests. A complete working demo has been built from the distillery’s own published information, and it can be shown live.</p>
   <div class="stat-grid">
     <div class="stat"><b>40+</b><span>pages and screens in the working demo</span></div>
     <div class="stat"><b>13</b><span>rums, each with its sourced facts</span></div>
     <div class="stat"><b>4</b><span>staff roles: admin, tours, trade, HR</span></div>
-    <div class="stat"><b>49</b><span>automated tests, run on every change</span></div>
+    <div class="stat"><b>65</b><span>automated tests, run on every change</span></div>
   </div>
   <h2>What the distillery gains</h2>
   <div class="cols">
@@ -365,7 +365,7 @@ const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>
   <h2>How a tour booking works</h2>
   <p>A visitor picks a day and a time from a week-by-week grid that shows the places left on every tour, says how many adults and under-18s are coming, and sends the form. Their places are held at once: the system counts guests against the tour’s capacity under a lock, so two parties booking the last places at the same moment can never both get them. The visitor gets a reference number on screen and by email, the tours team is alerted, and the booking appears on the tour calendar and the printable day sheet. A cancellation frees the places straight away.</p>
   <h2>Content and data in the demo</h2>
-  <p>Facts come from the archived clarkescourtrum.com (product pages, “Our story”, the factory-tour page and company news, 2003–2021), vacancy notices on NOW Grenada (2023–2026), the Library of Congress sale particulars for the estate (1877) and the UK holding page at clarkescourt.com. Each rum page and timeline entry links its source. The bottle, range, heritage and launch photographs are the company’s own, recovered from the archived site; the rest are credited Wikimedia Commons images to be replaced. <b>Nothing is invented</b>: no prices, awards on product pages, statistics, testimonials or staff names. The vacancies are samples, and every booking, enquiry, applicant and CV in the screenshots is demo data.</p>
+  <p>Facts come from the archived clarkescourtrum.com (product pages, “Our story”, the factory-tour page and company news, 2003–2020, plus 2021 press coverage), vacancy notices on NOW Grenada (2024–2026), the Library of Congress sale particulars for the estate (1877) and the UK holding page at clarkescourt.com. Each rum page and timeline entry links its source. The bottle, range, heritage and launch photographs are the company’s own, recovered from the archived site; the rest are credited Wikimedia Commons images to be replaced. <b>Nothing is invented</b>: no prices, awards on product pages, statistics, testimonials or staff names. The vacancies are samples, and every booking, enquiry, applicant and CV in the screenshots is demo data.</p>
   ${foot()}
 </section>
 
@@ -391,7 +391,7 @@ ${PHONES.map((row, i) => `
   <p class="eyebrow">Technology, hosting &amp; security</p>
   <h1>Built on a standard, open platform</h1>
   <div class="cols">
-    <div class="card"><h3>Platform</h3><ul><li>Laravel 13 on PHP 8.3 with a MySQL database: free, open-source and widely supported</li><li>No proprietary site builder or licence; any Laravel developer can maintain it</li><li>No background workers or extra servers required</li><li>49 automated tests cover every form, every staff role and tour capacity under the lock</li></ul></div>
+    <div class="card"><h3>Platform</h3><ul><li>Laravel 13 on PHP 8.3 with a MySQL database: free, open-source and widely supported</li><li>No proprietary site builder or licence; any Laravel developer can maintain it</li><li>No background workers or extra servers required</li><li>65 automated tests cover every form, every staff role and tour capacity under the lock</li></ul></div>
     <div class="card"><h3>Privacy</h3><ul><li>CVs are stored outside the public web folder and open only for HR and administrators</li><li>Every opening of a CV is recorded on the application</li><li>The tours and trade teams never see job applications</li><li>A privacy notice drafted for the company’s legal adviser</li></ul></div>
     <div class="card"><h3>Security</h3><ul><li>HTTPS throughout, with security headers</li><li>Hashed passwords and individual staff accounts with roles; switched-off accounts are signed out</li><li>Spam protection and rate limits on every public form</li><li>Monthly patching and daily backups under the plan</li></ul></div>
     <div class="card"><h3>Accessibility &amp; reach</h3><ul><li>17-pixel body text and 48-pixel buttons</li><li>Colour contrast checked to WCAG AA in light and dark themes</li><li>Every page and form works without JavaScript</li><li>Sitemap, structured data for rums and vacancies, and redirects from the old site’s addresses</li></ul></div>
