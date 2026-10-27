@@ -144,7 +144,7 @@
             <div>
                 <h2 class="kicker font-sans text-white/60">The distillery</h2>
                 <address class="mt-5 not-italic leading-relaxed">
-                    {{ gdl('name') }}<br>{{ $address['street'] }}, {{ $address['locality'] }}<br>{{ $address['parish'] }}, {{ $address['country'] }}
+                    {{ gdl('name') }}<br>{{ $address['street'] }}<br>{{ $address['parish'] }}, {{ $address['country'] }}
                 </address>
                 <a class="mt-1 inline-flex min-h-11 items-center gap-1.5 hover:text-white" href="{{ gdl('map_url') }}" rel="noopener" target="_blank">Get directions<x-icon name="external" class="h-3.5 w-3.5" /><span class="sr-only">(opens Google Maps)</span></a>
                 <dl class="mt-4 space-y-1 text-sm">

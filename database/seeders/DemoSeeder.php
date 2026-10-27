@@ -101,7 +101,7 @@ class DemoSeeder extends Seeder
                     $status = match (true) {
                         $d > 0 => Arr::random([LeadStatus::Attended, LeadStatus::Attended, LeadStatus::Attended, LeadStatus::NoShow, LeadStatus::Cancelled]),
                         $created->gt(now()->subHours(20)) => LeadStatus::New,
-                        default => Arr::random([LeadStatus::Confirmed, LeadStatus::Confirmed, LeadStatus::Confirmed, LeadStatus::New, LeadStatus::Cancelled]),
+                        default => Arr::random([LeadStatus::Confirmed, LeadStatus::Confirmed, LeadStatus::Confirmed, LeadStatus::Confirmed, LeadStatus::Cancelled]),
                     };
                     $this->lead(LeadType::Tour, $created, $status, $users['tours'], [
                         'country' => Arr::random(self::COUNTRIES),
@@ -174,7 +174,7 @@ class DemoSeeder extends Seeder
         $parishes = ['st_george', 'st_george', 'st_george', 'st_david', 'st_andrew', 'st_patrick', 'st_john', 'carriacou'];
         for ($i = 0; $i < 22; $i++) {
             $created = $i < 4 ? now()->subHours([3, 9, 28, 50][$i]) : now()->subDays(mt_rand(2, 40))->subHours(mt_rand(0, 23));
-            $status = $i < 4 ? LeadStatus::New : Arr::random([LeadStatus::Reviewing, LeadStatus::Reviewing, LeadStatus::Interview, LeadStatus::Declined, LeadStatus::Offered, LeadStatus::New]);
+            $status = $i < 4 ? LeadStatus::New : Arr::random([LeadStatus::Reviewing, LeadStatus::Reviewing, LeadStatus::Interview, LeadStatus::Declined, LeadStatus::Offered]);
             $job = mt_rand(0, 5) === 0 ? null : $jobs[$i % count($jobs)];
             $lead = $this->lead(LeadType::Application, $created, $status, $users['hr'], [
                 'country' => 'Grenada', 'job_posting_id' => $job?->id, 'consented_at' => $created,
@@ -206,7 +206,7 @@ class DemoSeeder extends Seeder
         ];
         foreach ($rows as $i => [$topic, $message, $country]) {
             $created = $i < 2 ? now()->subHours([4, 27][$i]) : now()->subDays(mt_rand(1, 45));
-            $this->lead(LeadType::Enquiry, $created, $i < 2 ? LeadStatus::New : Arr::random([LeadStatus::Replied, LeadStatus::Replied, LeadStatus::Closed, LeadStatus::New]),
+            $this->lead(LeadType::Enquiry, $created, $i < 2 ? LeadStatus::New : Arr::random([LeadStatus::Replied, LeadStatus::Replied, LeadStatus::Closed]),
                 $users[in_array($topic, ['tour_group', 'general'], true) ? 'tours' : 'trade'], [
                     'country' => $country, 'message' => $message, 'details' => ['topic' => $topic],
                 ]);

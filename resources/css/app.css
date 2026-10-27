@@ -42,8 +42,8 @@
     --gd-green: #007a5e;
 
     /* Data and state */
-    --series-1: #2f6fb3;
-    --series-track: #e6edf5;
+    --series-1: #a8662c;
+    --series-track: #ece2d2;
     --good: #2f7d32;
     --attention: #c77700;
     --critical: #c8322b;
@@ -73,8 +73,8 @@
         --primary: #f3e9d8;
         --primary-hover: #ffffff;
         --primary-ink: #1f150d;
-        --series-1: #5b9be0;
-        --series-track: #1f2b38;
+        --series-1: #e0a04a;
+        --series-track: #2e2318;
         --good: #6cc070;
         --muted-dot: #7d7166;
         --critical-text: #ff9a8f;
@@ -99,8 +99,8 @@
     --primary: #f3e9d8;
     --primary-hover: #ffffff;
     --primary-ink: #1f150d;
-    --series-1: #5b9be0;
-    --series-track: #1f2b38;
+    --series-1: #e0a04a;
+    --series-track: #2e2318;
     --good: #6cc070;
     --muted-dot: #7d7166;
     --critical-text: #ff9a8f;
@@ -193,7 +193,7 @@
      * Cask stamp: section labels stencilled like the mark on a barrel head, a numbered
      * roundel and a letter-spaced word inside a double rule.
      */
-    .stamp { display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.85rem 0.3rem 0.3rem; border: 1.5px solid currentColor; border-radius: 999px; outline: 1px solid color-mix(in srgb, currentColor 40%, transparent); outline-offset: 2px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; line-height: 1; color: var(--oak); }
+    .stamp { display: inline-flex; width: fit-content; align-items: center; gap: 0.6rem; padding: 0.3rem 0.85rem 0.3rem 0.3rem; border: 1.5px solid currentColor; border-radius: 999px; outline: 1px solid color-mix(in srgb, currentColor 40%, transparent); outline-offset: 2px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; line-height: 1; color: var(--oak); }
     .stamp .no { display: inline-grid; place-items: center; min-width: 1.85rem; height: 1.85rem; padding-inline: 0.3rem; border-radius: 999px; background: currentColor; font-family: var(--ff-display), Georgia, serif; font-size: 0.875rem; font-weight: 400; letter-spacing: 0; }
     .stamp .no > span { color: var(--bg); }
     :root[data-theme='dark'] .stamp { color: var(--accent-text); }

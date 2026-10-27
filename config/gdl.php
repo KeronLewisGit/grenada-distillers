@@ -36,7 +36,7 @@ return [
     ],
 
     'address' => [
-        'street' => 'Woodlands',
+        'street' => 'Woodlands Valley',
         'locality' => 'Woodlands',
         'parish' => 'St George',
         'country' => 'Grenada',
@@ -294,7 +294,7 @@ return [
         'lead' => "Clarke's Court comes from the largest distillery in Grenada, on the old sugar estate in the Woodlands valley, St George. See the range, visit the distillery, or bring the rum to your market.",
         'range_title' => 'From Pure White to Old Grog',
         'featured' => ['pure-white', 'old-grog', 'number-37', 'special-dark'],
-        'heritage_title' => 'An estate older than the island\'s capital streets',
+        'heritage_title' => 'Named for a bay in Woodlands',
         'heritage_text' => "Clarke's Court takes its name from Clarke's Court Bay and the Woodlands estate, which Gedney Clarke assembled in the 1700s. The distillery has made rum on the site since 1937.",
         'heritage_photo' => 'bay',
         'heritage_alt' => "Sunset over Clarke's Court Bay, Woburn, with small boats on the water",

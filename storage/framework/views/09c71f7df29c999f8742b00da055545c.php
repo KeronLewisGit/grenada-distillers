@@ -421,7 +421,7 @@ unset($__defined_vars, $__key, $__value); ?>
             <div>
                 <h2 class="kicker font-sans text-white/60">The distillery</h2>
                 <address class="mt-5 not-italic leading-relaxed">
-                    <?php echo e(gdl('name')); ?><br><?php echo e($address['street']); ?>, <?php echo e($address['locality']); ?><br><?php echo e($address['parish']); ?>, <?php echo e($address['country']); ?>
+                    <?php echo e(gdl('name')); ?><br><?php echo e($address['street']); ?><br><?php echo e($address['parish']); ?>, <?php echo e($address['country']); ?>
 
                 </address>
                 <a class="mt-1 inline-flex min-h-11 items-center gap-1.5 hover:text-white" href="<?php echo e(gdl('map_url')); ?>" rel="noopener" target="_blank">Get directions<?php if (isset($component)) { $__componentOriginalce262628e3a8d44dc38fd1f3965181bc = $component; } ?>
