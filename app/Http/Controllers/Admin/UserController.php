@@ -20,13 +20,16 @@ class UserController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        // Emails are stored lower-case, so the unique check must compare lower-case too
+        // (SQLite compares case-sensitively; a duplicate would otherwise be a database error).
+        $request->merge(['email' => strtolower(input_string($request->input('email')))]);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'role' => ['required', Rule::enum(Role::class)],
             'password' => ['required', 'string', 'min:10'],
         ]);
-        $user = User::create(['email' => strtolower($data['email'])] + $data + ['active' => true]);
+        $user = User::create($data + ['active' => true]);
 
         return back()->with('status', "{$user->name} can now sign in.");
     }

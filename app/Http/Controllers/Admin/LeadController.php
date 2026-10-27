@@ -8,8 +8,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Lead;
 use App\Models\LeadFile;
 use App\Models\User;
+use App\Support\Tours;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -68,28 +71,59 @@ class LeadController extends Controller
             'assigned_to' => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('active', true)],
         ]);
 
-        if (isset($data['status'])) {
-            $status = LeadStatus::from($data['status']);
-            if (! in_array($status, $lead->type->statuses(), true)) {
-                return back()->withErrors(['status' => "{$status->label()} is not a status for a {$lead->type->label()}."]);
-            }
-        }
-        if (isset($status) && $lead->moveTo($status)) {
-            $lead->notes()->create(['user_id' => $user->id, 'kind' => 'status', 'body' => 'Status changed to '.$status->label().'.']);
+        // Everything is checked before anything changes, so a refused choice never leaves a
+        // timeline note for a change that was not saved.
+        $status = isset($data['status']) ? LeadStatus::from($data['status']) : null;
+        if ($status && ! in_array($status, $lead->type->statuses(), true)) {
+            return back()->withErrors(['status' => "{$status->label()} is not a status for a {$lead->type->label()}."]);
         }
         // The form posts the id as a string; compare as integers so an unchanged choice adds no note.
         $assignTo = isset($data['assigned_to']) ? (int) $data['assigned_to'] : null;
-        if (array_key_exists('assigned_to', $data) && $lead->assigned_to !== $assignTo) {
-            $assignee = $assignTo ? User::find($assignTo) : null;
-            if ($assignee && ! $assignee->canWork($lead->type)) {
-                return back()->withErrors(['assigned_to' => "{$assignee->name} works in {$assignee->role->label()} and can't see this request."]);
-            }
-            $lead->assigned_to = $assignee?->id;
-            $lead->notes()->create(['user_id' => $user->id, 'kind' => 'assign', 'body' => $assignee ? "Assigned to {$assignee->name}." : 'Unassigned.']);
+        $reassign = array_key_exists('assigned_to', $data) && $lead->assigned_to !== $assignTo;
+        $assignee = $reassign && $assignTo ? User::find($assignTo) : null;
+        if ($assignee && ! $assignee->canWork($lead->type)) {
+            return back()->withErrors(['assigned_to' => "{$assignee->name} works in {$assignee->role->label()} and can't see this request."]);
         }
-        $lead->save();
 
-        return back()->with('status', "{$lead->reference} saved.");
+        $save = function () use ($lead, $user, $status, $reassign, $assignee): ?RedirectResponse {
+            if ($status && $this->reinstatesTour($lead, $status)) {
+                $left = Tours::remaining((string) $lead->visit_date?->toDateString(), (string) $lead->visit_time);
+                if ($left < (int) $lead->guests) {
+                    return back()->withErrors(['status' => "That tour now has {$left} ".($left === 1 ? 'place' : 'places')." left, so this party of {$lead->guests} can't be put back on it. Move them to another tour first."]);
+                }
+            }
+            if ($status && $lead->moveTo($status)) {
+                $lead->notes()->create(['user_id' => $user->id, 'kind' => 'status', 'body' => 'Status changed to '.$status->label().'.']);
+            }
+            if ($reassign) {
+                $lead->assigned_to = $assignee?->id;
+                $lead->notes()->create(['user_id' => $user->id, 'kind' => 'assign', 'body' => $assignee ? "Assigned to {$assignee->name}." : 'Unassigned.']);
+            }
+            $lead->save();
+
+            return null;
+        };
+
+        // Putting a cancelled booking back takes its places again, under the same lock as the public form.
+        if ($status && $this->reinstatesTour($lead, $status)) {
+            try {
+                $refused = Cache::lock('tour-slot:'.$lead->visit_date?->toDateString().' '.$lead->visit_time, 10)
+                    ->block((int) config('gdl.tours.lock_wait', 5), $save);
+            } catch (LockTimeoutException) {
+                return back()->withErrors(['status' => 'Someone is booking that tour right now. Please save again in a moment.']);
+            }
+        } else {
+            $refused = $save();
+        }
+
+        return $refused ?? back()->with('status', "{$lead->reference} saved.");
+    }
+
+    /** A cancelled tour booking moving to any status that holds places again. */
+    private function reinstatesTour(Lead $lead, LeadStatus $status): bool
+    {
+        return $lead->type === LeadType::Tour && $lead->status === LeadStatus::Cancelled
+            && $status !== LeadStatus::Cancelled && $lead->visit_date !== null;
     }
 
     public function note(Request $request, Lead $lead): RedirectResponse

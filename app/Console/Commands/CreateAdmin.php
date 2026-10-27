@@ -12,7 +12,7 @@ class CreateAdmin extends Command
 {
     protected $signature = 'app:create-admin {--name=} {--email=} {--password=}';
 
-    protected $description = 'Create (or reset the password of) an administrator account for the sales dashboard';
+    protected $description = 'Create (or reset the password of) an administrator account for the back office';
 
     public function handle(): int
     {

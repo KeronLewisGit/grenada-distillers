@@ -43,7 +43,7 @@ final class LeadIntake
 
         $lead->notes()->create(['kind' => 'system', 'body' => 'Received from the website'.($lead->subject() ? ': '.$lead->subject() : '').'.']);
 
-        Notify::office(new NewLead($lead));
+        Notify::office(new NewLead($lead), $type);
         Notify::customer($lead->email, new LeadReceived($lead));
 
         // Kept (not flashed) so refreshing the thank-you page still shows the number.

@@ -10,7 +10,7 @@
                 <fieldset class="space-y-5">
                     <legend class="fieldset-title mb-5"><span class="step">1</span>The role</legend>
                     <x-select name="job" label="Vacancy" :required="true" :value="$selected?->id" placeholder="Choose a vacancy…">
-                        @foreach ($jobs as $j)<option value="{{ $j->id }}" @selected((string) old('job', $selected?->id) === (string) $j->id)>{{ $j->title }} ({{ $j->department }})</option>@endforeach
+                        @foreach ($jobs as $j)<option value="{{ $j->id }}" @selected(old_string('job', $selected?->id) === (string) $j->id)>{{ $j->title }} ({{ $j->department }})</option>@endforeach
                         <option value="general" @selected(old('job') === 'general')>General application (no specific vacancy)</option>
                     </x-select>
                     <div class="grid gap-5 sm:grid-cols-2">

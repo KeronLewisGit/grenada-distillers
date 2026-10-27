@@ -1,6 +1,6 @@
 <x-layouts.admin title="Overview">
     @if ($notifyMissing)
-        <div class="mb-5 flex gap-3 rounded-lg border border-line bg-surface p-4 text-sm" role="status"><x-icon name="mail" class="h-5 w-5 flex-none text-accent-text" /><p><strong>Nobody is emailed about new requests yet.</strong> Set <code>GDL_NOTIFY_EMAIL</code> in <code>.env</code> to the office inboxes.</p></div>
+        <div class="mb-5 flex gap-3 rounded-lg border border-line bg-surface p-4 text-sm" role="status"><x-icon name="mail" class="h-5 w-5 flex-none text-accent-text" /><p><strong>Nobody is emailed about new requests yet.</strong> Set <code>GDL_NOTIFY_EMAIL</code> in <code>.env</code> to the office inbox, and <code>GDL_NOTIFY_TOURS</code>, <code>GDL_NOTIFY_TRADE</code> and <code>GDL_NOTIFY_HR</code> to the team inboxes.</p></div>
     @elseif ($notifyInvalid)
         <div class="mb-5 flex gap-3 rounded-lg border border-line bg-surface p-4 text-sm" role="status"><x-icon name="alert" class="h-5 w-5 flex-none text-[color:var(--critical)]" /><p>These notification addresses look wrong and are skipped: {{ implode(', ', $notifyInvalid) }}</p></div>
     @endif

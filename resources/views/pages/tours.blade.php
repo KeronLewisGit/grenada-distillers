@@ -1,7 +1,9 @@
 @php
     $weeks = collect($grid)->groupBy(fn (array $d) => $d['date']->copy()->startOfWeek()->toDateString());
-    $oldSlot = (string) old('slot');
-    $openWeek = $oldSlot !== '' ? \Illuminate\Support\Carbon::parse(substr($oldSlot, 0, 10))->startOfWeek()->toDateString() : $weeks->keys()->first();
+    $oldSlot = old_string('slot');
+    // Reopen the week of the slot that was chosen before a validation error (only if it is still on the grid).
+    $oldDay = collect($grid)->first(fn (array $d) => $d['date']->toDateString() === substr($oldSlot, 0, 10));
+    $openWeek = $oldDay ? $oldDay['date']->copy()->startOfWeek()->toDateString() : $weeks->keys()->first();
     $tour = gdl('tours.about');
 @endphp
 <x-layouts.site title="Distillery tours" description="Book a guided tour of the Clarke's Court distillery at Woodlands, St George, Grenada. Choose a day and time and get a reference straight away.">

@@ -51,6 +51,16 @@ if (! function_exists('input_string')) {
     }
 }
 
+if (! function_exists('old_string')) {
+    /** Old form input as a string. A tampered array (name[]=x) becomes '' instead of crashing the form it is shown in. */
+    function old_string(string $key, mixed $default = null): string
+    {
+        $value = old($key, $default);
+
+        return is_scalar($value) ? (string) $value : '';
+    }
+}
+
 if (! function_exists('lines_to_array')) {
     /**
      * Textarea with one item per line, bullets optional, to a clean list.

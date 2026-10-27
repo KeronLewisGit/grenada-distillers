@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('status', 16)->default('new')->index();
             $table->string('name', 120);
             $table->string('phone', 30)->nullable();
-            $table->string('phone_digits', 20)->nullable()->index();
+            $table->string('phone_digits', 30)->nullable()->index();
             $table->string('email');
             $table->string('contact_pref', 10)->default('email');
             $table->string('country', 80)->nullable();

@@ -30,6 +30,9 @@ class AgeGate
     {
         $next = is_string($next) ? $next : '';
 
-        return str_starts_with($next, '/') && ! str_starts_with($next, '//') && ! str_contains($next, '\\') && ! str_starts_with($next, '/age') ? $next : '/';
+        // Control characters (tabs, line breaks) are refused too: browsers strip them, and a
+        // line break in a Location header is a server error.
+        return str_starts_with($next, '/') && ! str_starts_with($next, '//') && ! str_contains($next, '\\')
+            && ! preg_match('/[\x00-\x20\x7f]/', $next) && ! str_starts_with($next, '/age') ? $next : '/';
     }
 }

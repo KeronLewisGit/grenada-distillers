@@ -115,14 +115,14 @@ Go to hPanel → GIT → your repository → **Auto Deployment** and copy the we
 | "Your Composer dependencies require a PHP version >= 8.3" | The website or SSH PHP is older than 8.3. Fix it in PHP Configuration, or run `/opt/alt/php83/usr/bin/php $(which composer) install --no-dev`. |
 | Redirect loop or "too many redirects" | SSL is not active yet, or Cloudflare is in *Flexible* mode. Use *Full*. |
 | Page loads without styling | `public/build/` was not committed. Run `npm run build` locally, commit, push and deploy again. |
-| Emails never arrive | Check `MAIL_*` and `GDL_NOTIFY_EMAIL` in `.env`, run `php artisan optimize`, and check the mailbox's spam folder. |
+| Emails never arrive | Check `MAIL_*`, `GDL_NOTIFY_EMAIL` and the team inboxes (`GDL_NOTIFY_TOURS`, `GDL_NOTIFY_TRADE`, `GDL_NOTIFY_HR`) in `.env`, run `php artisan optimize`, and check the mailbox's spam folder. |
 
 ## Check after install
 
 - `https://www.clarkescourtrum.com/.env`, `/.git/config` and `/composer.json` must return 403 or 404. For Option A, check `/gdl-app/` as well.
 - `http://` must redirect to `https://`.
 - The first visit to any page shows the age check (18+). Answer "No" and confirm the site stays closed; answer "Yes" and confirm you land on the page you asked for.
-- From a phone, book a tour, send a trade enquiry, send a message, and apply for a vacancy with a small PDF CV. Each should show a reference number, email the visitor, and email `GDL_NOTIFY_EMAIL`.
+- From a phone, book a tour, send a trade enquiry, send a message, and apply for a vacancy with a small PDF CV. Each should show a reference number, email the visitor, and email the team inbox for that request (or `GDL_NOTIFY_EMAIL` when none is set). The application must reach HR only.
 - Sign in as an **HR** user and open the CV from the application. Then sign in as a **Tours** user and confirm the application is not visible at all. Confirm `/gdl-app/storage/app/private/leads/` returns 403 (Option A) or that `storage/` is unreachable (Option B).
 - In Back office → Settings, set the guests per tour and the largest party that can book online. In Back office → Vacancies, publish the real open roles.
 - Old addresses such as `/products/aged/clarke-s-court-grog-rum` and `/about-us` should redirect (301) to the new pages.

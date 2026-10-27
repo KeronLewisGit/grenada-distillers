@@ -83,7 +83,7 @@ class DashboardController extends Controller
                 ? Lead::holdingTourPlaces()->where('status', '!=', LeadStatus::NoShow)->whereBetween('visit_date', [today()->toDateString(), today()->addDays(2)->toDateString()])
                     ->orderBy('visit_date')->orderBy('visit_time')->limit(8)->get()
                 : collect(),
-            'notifyMissing' => $user->isAdmin() && Notify::recipients() === [],
+            'notifyMissing' => $user->isAdmin() && ! Notify::anyRecipients(),
             'notifyInvalid' => $user->isAdmin() ? Notify::invalid() : [],
         ]);
     }

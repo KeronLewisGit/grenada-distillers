@@ -1,6 +1,7 @@
 @php
     $topics = gdl('enquiry_topics');
-    $topic = old('topic', array_key_exists((string) request('topic'), $topics) ? request('topic') : 'general');
+    $asked = input_string(request()->query('topic'));
+    $topic = old_string('topic', array_key_exists($asked, $topics) ? $asked : 'general');
     $address = gdl('address');
 @endphp
 <x-layouts.site title="Contact & directions" :description="'Grenada Distillers Ltd, '.$address['locality'].', '.$address['parish'].', Grenada. '.gdl('email').'. '.\App\Support\Hours::summary().'.'">

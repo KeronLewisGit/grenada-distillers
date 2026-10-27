@@ -11,7 +11,7 @@
                     <button type="submit" name="answer" value="no" class="btn btn-on-dark min-w-32 text-lg">No</button>
                 </div>
                 <label class="mt-5 flex min-h-11 items-center gap-3 text-white/85"><input type="checkbox" name="remember" value="1" class="h-5 w-5 accent-[var(--accent)]">Remember me on this device for 30 days</label>
-                <p class="mt-3 max-w-md text-sm text-white/70">If you are visiting from a country where the legal drinking age is higher, please follow your local law. By entering you accept our <a href="{{ route('privacy') }}" class="text-link">privacy notice</a>; we set one small cookie to remember your answer.</p>
+                <p class="on-dark mt-3 max-w-md text-sm text-white/70">If you are visiting from a country where the legal drinking age is higher, please follow your local law. By entering you accept our <a href="{{ route('privacy') }}" class="text-link">privacy notice</a>; we set one small cookie to remember your answer.</p>
             </form>
         @else
             <p class="mt-8"><a href="{{ route('age.show') }}" class="btn btn-on-dark">I answered by mistake</a></p>
