@@ -11,7 +11,9 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\NewLead;
 use App\Support\Notify;
+use App\Support\PendingUpload;
 use App\Support\Tours;
+use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Notifications\AnonymousNotifiable;
@@ -172,6 +174,98 @@ class HardeningTest extends TestCase
         $this->ofAge()->get('/heritage')->assertOk()
             ->assertSee('Sources:')
             ->assertSee('Wee FM Grenada, April 2021');
+    }
+
+    public function test_a_status_change_read_before_another_one_landed_is_not_applied_twice(): void
+    {
+        $lead = Lead::factory()->trade()->create();
+        // Two requests read the same row; the first wins, the second finds the status already moved.
+        $first = Lead::findOrFail($lead->id);
+        $second = Lead::findOrFail($lead->id);
+
+        $this->assertTrue($first->transition(LeadStatus::Contacted));
+        $this->assertFalse($second->transition(LeadStatus::Contacted));
+        $this->assertSame(LeadStatus::Contacted, $second->status);
+        $this->assertNotNull($lead->fresh()?->first_contacted_at);
+
+        $admin = $this->staff(Role::Admin);
+        $this->actingAs($admin)->patch("/admin/requests/{$lead->id}", ['status' => 'contacted', 'assigned_to' => $admin->id])->assertSessionHasNoErrors();
+        $this->actingAs($admin)->patch("/admin/requests/{$lead->id}", ['status' => 'contacted', 'assigned_to' => $admin->id])->assertSessionHasNoErrors();
+        $this->assertSame(1, $lead->notes()->where('kind', 'assign')->count());
+        $this->assertSame(0, $lead->notes()->where('kind', 'status')->count());
+    }
+
+    public function test_a_double_submitted_note_is_kept_once_and_a_note_alone_does_not_move_the_request_on(): void
+    {
+        $hr = $this->staff(Role::Hr);
+        $lead = Lead::factory()->application()->create();
+
+        $page = $this->actingAs($hr)->get("/admin/requests/{$lead->id}")->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/name="contacted" value="1" class="h-5 w-5">/', (string) $page, 'the reply box starts unticked');
+
+        $this->actingAs($hr)->post("/admin/requests/{$lead->id}/notes", ['body' => 'CV is thin on lab work.'])->assertRedirect();
+        $this->actingAs($hr)->post("/admin/requests/{$lead->id}/notes", ['body' => 'CV is thin on lab work.'])->assertRedirect();
+        $lead->refresh();
+        $this->assertSame(1, $lead->notes()->where('kind', 'note')->count());
+        $this->assertSame(LeadStatus::New, $lead->status);
+        $this->assertNull($lead->first_contacted_at);
+
+        $this->actingAs($hr)->post("/admin/requests/{$lead->id}/notes", ['body' => 'Emailed to acknowledge.', 'contacted' => '1'])->assertRedirect();
+        $this->assertSame(LeadStatus::Reviewing, $lead->fresh()?->status);
+    }
+
+    public function test_a_valid_cv_is_kept_when_the_rest_of_the_application_needs_fixing(): void
+    {
+        $form = $this->contact(['email' => 'cv@example.com', 'job' => 'general', 'parish' => 'st_george', 'experience' => '3_5', 'qualification' => 'cxc', 'consent' => '1']);
+        $cv = UploadedFile::fake()->create('Kezia CV.pdf', 120, 'application/pdf');
+
+        // Something else is wrong: the CV is kept and the form says so.
+        $this->ofAge()->from('/careers/apply')->post('/careers/apply', array_merge($form, ['parish' => 'nowhere', 'cv' => $cv]))
+            ->assertRedirect('/careers/apply')->assertSessionHasErrors('parish')->assertSessionDoesntHaveErrors('cv');
+        $this->assertCount(1, Storage::disk('local')->allFiles('pending'));
+        $this->ofAge()->get('/careers/apply')->assertOk()->assertSee('Attached: Kezia CV.pdf')
+            ->assertDontSee('name="cv" type="file" value="" required', false);
+
+        // Sent again without choosing the file: the kept CV goes with the application.
+        $this->ofAge()->post('/careers/apply', $form)->assertRedirect('/thanks');
+        $lead = Lead::sole();
+        $file = $lead->files()->sole();
+        $this->assertSame('Kezia CV.pdf', $file->original_name);
+        $this->assertStringStartsWith('leads/'.$lead->id.'/', $file->path);
+        Storage::disk('local')->assertExists($file->path);
+        $this->assertSame([], Storage::disk('local')->allFiles('pending'));
+    }
+
+    public function test_an_unsafe_file_is_never_kept_and_old_pending_uploads_are_cleared(): void
+    {
+        $form = $this->contact(['job' => 'general', 'parish' => 'nowhere', 'experience' => '3_5', 'qualification' => 'cxc', 'consent' => '1']);
+        $this->ofAge()->from('/careers/apply')->post('/careers/apply', array_merge($form, ['cv' => UploadedFile::fake()->create('cv.exe', 10, 'application/x-msdownload')]))
+            ->assertSessionHasErrors(['cv', 'parish']);
+        $this->assertSame([], Storage::disk('local')->allFiles('pending'));
+
+        Storage::disk('local')->put('pending/abandoned/old.pdf', 'x');
+        touch(Storage::disk('local')->path('pending/abandoned/old.pdf'), now()->subHours(25)->getTimestamp());
+        PendingUpload::prune();
+        Storage::disk('local')->assertMissing('pending/abandoned/old.pdf');
+    }
+
+    public function test_the_demo_seeder_refuses_production_unless_it_is_a_preview(): void
+    {
+        $this->app->detectEnvironment(fn () => 'production');
+        config(['gdl.preview' => false]);
+        $refused = null;
+        try {
+            $this->app->make(DemoSeeder::class)->run();
+        } catch (\RuntimeException $e) {
+            $refused = $e->getMessage();
+        }
+        $this->assertStringContainsString('refuses to run in production', (string) $refused);
+        $this->assertSame(0, User::count());
+
+        // A pitch preview runs as production with demo data.
+        config(['gdl.preview' => true]);
+        $this->app->make(DemoSeeder::class)->run();
+        $this->assertGreaterThan(0, Lead::count());
     }
 
     /** The length a migration gives a string column, e.g. string('phone_digits', 30). */

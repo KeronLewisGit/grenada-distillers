@@ -6,13 +6,16 @@ use App\Enums\LeadType;
 use App\Models\JobPosting;
 use App\Models\Setting;
 use App\Support\LeadIntake;
+use App\Support\PendingUpload;
 use App\Support\Rums;
 use App\Support\Tours;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -149,6 +152,7 @@ class LeadFormController extends Controller
         return view('pages.careers.apply', [
             'jobs' => $jobs,
             'selected' => $jobs->firstWhere('slug', input_string($request->query('job'))),
+            'pendingCv' => PendingUpload::get($request, 'cv'),
         ]);
     }
 
@@ -157,28 +161,49 @@ class LeadFormController extends Controller
         if (LeadIntake::isBot($request, LeadType::Application)) {
             return to_route('thanks');
         }
-        $data = $request->validate($this->contactRules() + [
-            'job' => ['required', 'string', function (string $attr, mixed $value, \Closure $fail) {
-                if ($value !== 'general' && ! JobPosting::open()->whereKey((int) $value)->exists()) {
-                    $fail('That vacancy has closed. Choose another, or send a general application.');
-                }
-            }],
-            'parish' => ['required', Rule::in(array_keys((array) config('gdl.parishes')))],
-            'experience' => ['required', Rule::in(array_keys((array) config('gdl.careers.experience')))],
-            'qualification' => ['required', Rule::in(array_keys((array) config('gdl.careers.qualifications')))],
-            'available_from' => ['nullable', 'date', 'after_or_equal:today'],
-            'current_role' => ['nullable', 'string', 'max:160'],
-            'cv' => ['required', 'file', self::CV_MIMES, 'max:5120'],
-            'message' => ['nullable', 'string', 'max:3000'],
-            'consent' => ['accepted'],
-        ], [
-            'job.required' => 'Choose the vacancy you are applying for, or a general application.',
-            'cv.required' => 'Please attach your CV.',
-            'cv.mimes' => 'Your CV must be a PDF or Word document.',
-            'cv.max' => 'Your CV must be 5 MB or smaller.',
-            'cv.uploaded' => 'Your CV did not upload. It must be 5 MB or smaller.',
-            'consent.accepted' => 'Please agree that we may keep your application for 12 months.',
-        ], ['available_from' => 'start date', 'current_role' => 'current or last job']);
+        // A CV that passed its checks is kept when something else on the form needs fixing.
+        $pendingCv = PendingUpload::get($request, 'cv');
+        try {
+            $data = $request->validate($this->contactRules() + [
+                'job' => ['required', 'string', function (string $attr, mixed $value, \Closure $fail) {
+                    if ($value !== 'general' && ! JobPosting::open()->whereKey((int) $value)->exists()) {
+                        $fail('That vacancy has closed. Choose another, or send a general application.');
+                    }
+                }],
+                'parish' => ['required', Rule::in(array_keys((array) config('gdl.parishes')))],
+                'experience' => ['required', Rule::in(array_keys((array) config('gdl.careers.experience')))],
+                'qualification' => ['required', Rule::in(array_keys((array) config('gdl.careers.qualifications')))],
+                'available_from' => ['nullable', 'date', 'after_or_equal:today'],
+                'current_role' => ['nullable', 'string', 'max:160'],
+                'cv' => [$pendingCv ? 'nullable' : 'required', 'file', self::CV_MIMES, 'max:5120'],
+                'message' => ['nullable', 'string', 'max:3000'],
+                'consent' => ['accepted'],
+            ], [
+                'job.required' => 'Choose the vacancy you are applying for, or a general application.',
+                'cv.required' => 'Please attach your CV.',
+                'cv.mimes' => 'Your CV must be a PDF or Word document.',
+                'cv.max' => 'Your CV must be 5 MB or smaller.',
+                'cv.uploaded' => 'Your CV did not upload. It must be 5 MB or smaller.',
+                'consent.accepted' => 'Please agree that we may keep your application for 12 months.',
+            ], ['available_from' => 'start date', 'current_role' => 'current or last job']);
+        } catch (ValidationException $e) {
+            $upload = $request->file('cv');
+            if ($upload instanceof UploadedFile && $upload->isValid() && ! $e->validator->errors()->has('cv')) {
+                PendingUpload::stash($request, 'cv', $upload);
+            }
+            throw $e;
+        }
+
+        $upload = $request->file('cv');
+        if ($upload instanceof UploadedFile) {
+            PendingUpload::forget($request, 'cv');
+            $cv = $upload;
+        } else {
+            $cv = PendingUpload::take($request, 'cv');
+        }
+        if ($cv === null) {
+            return back()->withInput()->withErrors(['cv' => 'Please attach your CV.']);
+        }
 
         LeadIntake::create(LeadType::Application, $this->contactFields($data) + [
             'job_posting_id' => $data['job'] === 'general' ? null : (int) $data['job'],
@@ -192,7 +217,7 @@ class LeadFormController extends Controller
                 'available_from' => $data['available_from'] ?? null,
                 'current_role' => $data['current_role'] ?? null,
             ],
-        ], ['cv' => array_filter([$request->file('cv')])], $request);
+        ], ['cv' => [$cv]], $request);
 
         return to_route('thanks');
     }

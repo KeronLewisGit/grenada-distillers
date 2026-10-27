@@ -131,7 +131,7 @@
                     <textarea id="body" name="body" rows="3" class="a-input w-full" placeholder="Emailed, called, sent samples…" required maxlength="3000"></textarea>
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         @if ($lead->status === \App\Enums\LeadStatus::New)
-                            <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="contacted" value="1" class="h-5 w-5" checked>{{ $replyLabel }}</label>
+                            <label class="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" name="contacted" value="1" class="h-5 w-5">{{ $replyLabel }}</label>
                         @endif
                         <button class="a-btn a-btn-primary ml-auto">Add note</button>
                     </div>

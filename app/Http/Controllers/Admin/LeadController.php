@@ -92,14 +92,12 @@ class LeadController extends Controller
                     return back()->withErrors(['status' => "That tour now has {$left} ".($left === 1 ? 'place' : 'places')." left, so this party of {$lead->guests} can't be put back on it. Move them to another tour first."]);
                 }
             }
-            if ($status && $lead->moveTo($status)) {
+            if ($status && $lead->transition($status)) {
                 $lead->notes()->create(['user_id' => $user->id, 'kind' => 'status', 'body' => 'Status changed to '.$status->label().'.']);
             }
-            if ($reassign) {
-                $lead->assigned_to = $assignee?->id;
+            if ($reassign && $lead->claim(['assigned_to' => $lead->assigned_to], ['assigned_to' => $assignee?->id])) {
                 $lead->notes()->create(['user_id' => $user->id, 'kind' => 'assign', 'body' => $assignee ? "Assigned to {$assignee->name}." : 'Unassigned.']);
             }
-            $lead->save();
 
             return null;
         };
@@ -132,15 +130,24 @@ class LeadController extends Controller
         $data = $request->validate(['body' => ['required', 'string', 'max:3000'], 'contacted' => ['nullable', 'boolean']]);
         $user = $this->user($request);
 
-        $lead->notes()->create(['user_id' => $user->id, 'kind' => 'note', 'body' => $data['body']]);
-        // Logging a reply on a new request counts as the first response.
-        if (! empty($data['contacted']) && $lead->status === LeadStatus::New) {
+        $contacted = ! empty($data['contacted']);
+
+        // One note per press: a double-submitted form (same person, same text, moments apart) is kept once.
+        Cache::lock('lead-note:'.$lead->id, 10)->block(5, function () use ($lead, $user, $data, $contacted): void {
+            $repeat = $lead->notes()->where('user_id', $user->id)->where('kind', 'note')->where('body', $data['body'])
+                ->where('created_at', '>=', now()->subMinute())->exists();
+            if (! $repeat) {
+                $lead->notes()->create(['user_id' => $user->id, 'kind' => 'note', 'body' => $data['body']]);
+            }
+            // Only a logged reply (the box is unticked by default) moves a new request on.
             $next = $lead->type->firstReplyStatus();
-            $lead->moveTo($next);
-            $lead->notes()->create(['user_id' => $user->id, 'kind' => 'status', 'body' => 'Status changed to '.$next->label().'.']);
-        }
-        $lead->first_contacted_at ??= ! empty($data['contacted']) ? now() : null;
-        $lead->save();
+            if ($contacted && $lead->status === LeadStatus::New && $lead->transition($next)) {
+                $lead->notes()->create(['user_id' => $user->id, 'kind' => 'status', 'body' => 'Status changed to '.$next->label().'.']);
+            }
+            if ($contacted && $lead->first_contacted_at === null) {
+                $lead->claim(['first_contacted_at' => null], ['first_contacted_at' => now()]);
+            }
+        });
 
         return back()->with('status', 'Note added.')->withFragment('timeline');
     }

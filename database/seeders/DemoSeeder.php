@@ -40,6 +40,11 @@ class DemoSeeder extends Seeder
 
     public function run(): void
     {
+        // Sample data never goes into the live site. A pitch preview (GDL_PREVIEW=true) runs as
+        // production with demo data, so that is allowed.
+        if (app()->isProduction() && ! gdl('preview')) {
+            throw new \RuntimeException('DemoSeeder refuses to run in production. Set GDL_PREVIEW=true only on a preview site.');
+        }
         mt_srand(1937);
         Setting::put('tour_slot_capacity', '20');
         Setting::put('tour_max_party', '12');

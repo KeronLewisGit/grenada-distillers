@@ -9,6 +9,7 @@ use App\Notifications\LeadReceived;
 use App\Notifications\NewLead;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Every public form ends here: one lead row with a reference, any upload on the private
@@ -18,7 +19,7 @@ final class LeadIntake
 {
     /**
      * @param  array<string, mixed>  $attributes
-     * @param  array<string, list<UploadedFile>>  $files  kind => files
+     * @param  array<string, list<UploadedFile|array{path: string, name: string, mime: string|null, size: int}>>  $files  kind => files (an array is a PendingUpload kept from an earlier attempt)
      */
     public static function create(LeadType $type, array $attributes, array $files, Request $request): Lead
     {
@@ -30,6 +31,14 @@ final class LeadIntake
 
         foreach ($files as $kind => $list) {
             foreach ($list as $file) {
+                if (is_array($file)) {
+                    $path = 'leads/'.$lead->id.'/'.basename($file['path']);
+                    Storage::disk('local')->move($file['path'], $path);
+                    Storage::disk('local')->deleteDirectory(dirname($file['path']));
+                    $lead->files()->create(['kind' => $kind, 'path' => $path, 'original_name' => $file['name'], 'mime' => $file['mime'], 'size' => $file['size']]);
+
+                    continue;
+                }
                 $lead->files()->create([
                     'kind' => $kind,
                     // Random file name, private disk, one folder per lead.

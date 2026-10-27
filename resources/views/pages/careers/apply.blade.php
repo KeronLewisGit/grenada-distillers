@@ -26,7 +26,7 @@
                         <x-select name="experience" label="Experience in similar work" :options="gdl('careers.experience')" :required="true" />
                         <x-select name="qualification" label="Highest qualification" :options="gdl('careers.qualifications')" :required="true" />
                     </div>
-                    <x-field name="cv" label="Your CV" type="file" :required="true" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hint="PDF or Word, up to 5 MB." />
+                    <x-field name="cv" label="Your CV" type="file" :required="! $pendingCv" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" :hint="$pendingCv ? 'Attached: '.$pendingCv['name'].' ('.max(1, (int) round($pendingCv['size'] / 1024)).' KB). Choose a file only to replace it.' : 'PDF or Word, up to 5 MB.'" />
                     <x-field name="message" label="A short note to HR" type="textarea" :optional="true" maxlength="3000" rows="4" />
                     <label class="choice items-start"><input type="checkbox" name="consent" value="1" required @checked(old('consent')) class="mt-0.5"><span>I agree that Grenada Distillers may keep my application and CV for 12 months to consider me for this and similar roles.</span></label>
                     <x-error for="consent" />

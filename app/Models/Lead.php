@@ -143,16 +143,48 @@ class Lead extends Model
         return $this->status === LeadStatus::New && $this->created_at->lt(now()->subHours(self::RESPONSE_HOURS));
     }
 
-    public function moveTo(LeadStatus $status): bool
+    /**
+     * Moves to $status with a conditional UPDATE (only if the row still has the status this copy
+     * read), so a double-submitted change is applied, and noted, once. Leaving New counts as the
+     * first reply.
+     */
+    public function transition(LeadStatus $status): bool
     {
         if ($this->status === $status) {
             return false;
         }
-        $this->status = $status;
-        $this->status_changed_at = now();
-        if ($status !== LeadStatus::New) {
-            $this->first_contacted_at ??= now();
+        $changes = ['status' => $status, 'status_changed_at' => now()];
+        if ($status !== LeadStatus::New && $this->first_contacted_at === null) {
+            $changes['first_contacted_at'] = now();
         }
+
+        return $this->claim(['status' => $this->status], $changes);
+    }
+
+    /**
+     * Writes $changes only if the row still holds $expected (column => value read earlier).
+     * Returns false, and reloads this copy, when another request changed it first.
+     *
+     * @param  array<string, mixed>  $expected
+     * @param  array<string, mixed>  $changes
+     */
+    public function claim(array $expected, array $changes): bool
+    {
+        $query = static::query()->whereKey($this->getKey());
+        foreach ($expected as $column => $value) {
+            $value = $value instanceof \BackedEnum ? $value->value : $value;
+            $value === null ? $query->whereNull($column) : $query->where($column, $value);
+        }
+        $this->forceFill($changes);
+        $this->updateTimestamps();
+        $dirty = $this->getDirty();
+
+        if ($query->update($dirty) !== 1) {
+            $this->refresh();
+
+            return false;
+        }
+        $this->syncOriginalAttributes(array_keys($dirty));
 
         return true;
     }
