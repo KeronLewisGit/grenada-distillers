@@ -254,7 +254,6 @@
     .prose-copy li + li { margin-top: 0.35rem; }
     .prose-copy a, .text-link { color: var(--link); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
     .prose-copy a:hover, .text-link:hover { text-decoration-thickness: 2px; }
-    .on-dark .text-link { color: var(--accent); }
 
     /* Buttons: 48px, square-shouldered like a label, small radius. */
     .btn {
@@ -416,4 +415,9 @@ select.a-input { appearance: none; padding-right: 2.25rem; background-image: url
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']) .dark-show { display: block; }
     :root:not([data-theme='light']) .dark-hide { display: none; }
+}
+
+/* Links on molasses bands. In the utilities layer, or the text-link colour utility (from --color-link) wins. */
+@layer utilities {
+    .on-dark .text-link { color: var(--accent); }
 }

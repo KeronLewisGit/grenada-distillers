@@ -129,7 +129,7 @@ const SECTIONS = [
 const FEATURES = [
   ['Public website', ['Phone-first, light and dark themes', 'Age check that works without JavaScript', 'A page per rum, sourced facts only', 'Heritage timeline with sources', 'Tour booking with live places', 'Trade & export enquiries', 'Careers with CV upload', 'Redirects from the old site’s addresses', 'Sitemap and structured data for search']],
   ['Back office', ['Four roles: admin, tours, trade, HR', 'Headline: requests waiting over a day', 'One inbox with filters, search and CSV', 'Per-type statuses and notes', 'Tour calendar and printable day sheet', 'Vacancy publishing', 'CVs for HR only, every opening logged', 'Editable tour capacity']],
-  ['Platform', ['Laravel 13 on PHP 8.3', 'Runs on standard shared hosting', 'Private file storage outside the web root', 'HTTPS, security headers, spam protection', '70 automated tests', 'Packaged installer and written guide']],
+  ['Platform', ['Laravel 13 on PHP 8.3', 'Runs on standard shared hosting', 'Private file storage outside the web root', 'HTTPS, security headers, spam protection', '71 automated tests', 'Packaged installer and written guide']],
 ];
 
 const PHONES = [
@@ -346,7 +346,7 @@ const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>
     <div class="stat"><b>40+</b><span>pages and screens in the working demo</span></div>
     <div class="stat"><b>13</b><span>rums, each with its sourced facts</span></div>
     <div class="stat"><b>4</b><span>staff roles: admin, tours, trade, HR</span></div>
-    <div class="stat"><b>70</b><span>automated tests, run on every change</span></div>
+    <div class="stat"><b>71</b><span>automated tests, run on every change</span></div>
   </div>
   <h2>What the distillery gains</h2>
   <div class="cols">
@@ -391,7 +391,7 @@ ${PHONES.map((row, i) => `
   <p class="eyebrow">Technology, hosting &amp; security</p>
   <h1>Built on a standard, open platform</h1>
   <div class="cols">
-    <div class="card"><h3>Platform</h3><ul><li>Laravel 13 on PHP 8.3 with a MySQL database: free, open-source and widely supported</li><li>No proprietary site builder or licence; any Laravel developer can maintain it</li><li>No background workers or extra servers required</li><li>70 automated tests cover every form, every staff role and tour capacity under the lock</li></ul></div>
+    <div class="card"><h3>Platform</h3><ul><li>Laravel 13 on PHP 8.3 with a MySQL database: free, open-source and widely supported</li><li>No proprietary site builder or licence; any Laravel developer can maintain it</li><li>No background workers or extra servers required</li><li>71 automated tests cover every form, every staff role and tour capacity under the lock</li></ul></div>
     <div class="card"><h3>Privacy</h3><ul><li>CVs are stored outside the public web folder and open only for HR and administrators</li><li>Every opening of a CV is recorded on the application</li><li>The tours and trade teams never see job applications</li><li>A privacy notice drafted for the company’s legal adviser</li></ul></div>
     <div class="card"><h3>Security</h3><ul><li>HTTPS throughout, with security headers</li><li>Hashed passwords and individual staff accounts with roles; switched-off accounts are signed out</li><li>Spam protection and rate limits on every public form</li><li>Monthly patching and daily backups under the plan</li></ul></div>
     <div class="card"><h3>Accessibility &amp; reach</h3><ul><li>17-pixel body text and 48-pixel buttons</li><li>Colour contrast checked to WCAG AA in light and dark themes</li><li>Every page and form works without JavaScript</li><li>Sitemap, structured data for rums and vacancies, and redirects from the old site’s addresses</li></ul></div>

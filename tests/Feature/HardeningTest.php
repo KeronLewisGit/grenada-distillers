@@ -268,6 +268,18 @@ class HardeningTest extends TestCase
         $this->assertGreaterThan(0, Lead::count());
     }
 
+    public function test_links_on_dark_bands_use_the_accent_in_the_built_css(): void
+    {
+        // The text-link colour utility sits in the utilities layer, so the dark-band override must too.
+        $manifest = json_decode((string) file_get_contents(public_path('build/manifest.json')), true);
+        $css = (string) file_get_contents(public_path('build/'.$manifest['resources/css/app.css']['file']));
+        $utilities = strpos($css, '@layer utilities{');
+        $override = strpos($css, '.on-dark .text-link{color:var(--accent)}');
+        $this->assertNotFalse($utilities);
+        $this->assertNotFalse($override);
+        $this->assertGreaterThan($utilities, $override);
+    }
+
     /** The length a migration gives a string column, e.g. string('phone_digits', 30). */
     private function columnLength(string $column): int
     {

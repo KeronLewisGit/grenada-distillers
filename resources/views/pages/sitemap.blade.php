@@ -8,17 +8,17 @@
         ] as $group => $links)
             <div>
                 <h2 class="font-sans text-lg font-bold">{{ $group }}</h2>
-                <ul class="mt-3 space-y-1">@foreach ($links as $t => $u)<li><a class="text-link inline-flex min-h-11 items-center" href="{{ $u }}">{{ $t }}</a></li>@endforeach</ul>
+                <ul class="mt-3 space-y-1">@foreach ($links as $t => $u)<li><a class="text-link inline-flex min-h-11 min-w-11 items-center" href="{{ $u }}">{{ $t }}</a></li>@endforeach</ul>
             </div>
         @endforeach
         <div>
             <h2 class="font-sans text-lg font-bold">The rums</h2>
-            <ul class="mt-3 space-y-1">@foreach (\App\Support\Rums::all() as $k => $r)<li><a class="text-link inline-flex min-h-11 items-center" href="{{ route('rums.show', $k) }}">{{ $r['name'] }}</a></li>@endforeach</ul>
+            <ul class="mt-3 space-y-1">@foreach (\App\Support\Rums::all() as $k => $r)<li><a class="text-link inline-flex min-h-11 min-w-11 items-center" href="{{ route('rums.show', $k) }}">{{ $r['name'] }}</a></li>@endforeach</ul>
         </div>
         @if ($jobs->isNotEmpty())
             <div class="md:col-span-2">
                 <h2 class="font-sans text-lg font-bold">Vacancies</h2>
-                <ul class="mt-3 space-y-1">@foreach ($jobs as $j)<li><a class="text-link inline-flex min-h-11 items-center" href="{{ route('careers.show', $j) }}">{{ $j->title }}</a></li>@endforeach</ul>
+                <ul class="mt-3 space-y-1">@foreach ($jobs as $j)<li><a class="text-link inline-flex min-h-11 min-w-11 items-center" href="{{ route('careers.show', $j) }}">{{ $j->title }}</a></li>@endforeach</ul>
             </div>
         @endif
     </section>

@@ -160,10 +160,10 @@
                 <div class="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <p>© {{ date('Y') }} {{ gdl('name') }}. Clarke's Court is a brand of {{ gdl('name') }}.</p>
                     <p class="flex flex-wrap gap-x-5">
-                        <a class="inline-flex min-h-11 items-center hover:text-white" href="{{ route('privacy') }}">Privacy</a>
-                        <a class="inline-flex min-h-11 items-center hover:text-white" href="{{ route('credits') }}">Photo credits</a>
-                        <a class="inline-flex min-h-11 items-center hover:text-white" href="{{ route('sitemap.page') }}">Site map</a>
-                        <a class="inline-flex min-h-11 items-center hover:text-white" href="{{ route('login') }}">Staff sign in</a>
+                        <a class="inline-flex min-h-11 min-w-11 items-center hover:text-white" href="{{ route('privacy') }}">Privacy</a>
+                        <a class="inline-flex min-h-11 min-w-11 items-center hover:text-white" href="{{ route('credits') }}">Photo credits</a>
+                        <a class="inline-flex min-h-11 min-w-11 items-center hover:text-white" href="{{ route('sitemap.page') }}">Site map</a>
+                        <a class="inline-flex min-h-11 min-w-11 items-center hover:text-white" href="{{ route('login') }}">Staff sign in</a>
                     </p>
                 </div>
             </div>
