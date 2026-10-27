@@ -9,7 +9,7 @@ Website and back office for Grenada Distillers Ltd, makers of Clarke's Court rum
 - **Four request flows, each with a reference number and an email confirmation.**
   - Tour booking (`TB-26-00042`): pick a day and time from a week-by-week grid that shows the places left on every tour. Capacity is counted in guests per tour (Settings), claimed under a lock so two parties can't take the last places, and cancelled bookings free their places. Public holidays are closed. Under-18s can come but don't taste.
   - Trade and export enquiry (`TE-…`): company, country, type of business, markets, rums of interest, first-order size and licence status.
-  - Job application (`JA-…`): a vacancy or a general application, parish, experience, qualification and a CV upload (PDF or Word, 5 MB) to the private disk, with an explicit 12-month consent.
+  - Job application (`JA-…`): a vacancy or a general application, parish, experience, qualification and a CV upload (PDF or Word, 5 MB) to the private disk, kept for the next try if something else on the form needs fixing, with an explicit 12-month consent.
   - Contact message (`EN-…`) with a topic.
 - **Back office** at `/admin`, with four roles:
   - **Admin**: everything, including staff and settings.

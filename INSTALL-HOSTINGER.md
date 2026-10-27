@@ -46,6 +46,10 @@ public_html/
 2. **PHP version.** Go to hPanel → Advanced → PHP Configuration and choose **PHP 8.3** (8.4 also works). Leave the default extensions enabled. `pdo_mysql`, `mbstring`, `openssl`, `fileinfo` (CV uploads) and `tokenizer` are required.
 3. **Database.** Go to hPanel → Databases → MySQL Databases and create a database and a user. Write down the full names, which include the `u123456789_` prefix, and the password.
 4. **Mailbox.** Go to hPanel → Emails and create `info@clarkescourtrum.com` (or use an existing mailbox). The site sends new-request notifications to staff and booking confirmations to visitors through this mailbox.
+
+   **Mail DNS, before launch.** Grenada Distillers already receives mail at `@clarkescourtrum.com` (the vacancy notices use `assistsect@`), so its MX records point at its current mail provider. Do not change the MX records. Either send through that provider (put its SMTP details in `MAIL_*`), or keep a Hostinger mailbox for sending only and add Hostinger to the domain's existing SPF record (`include:_spf.mail.hostinger.com` inside the one `v=spf1 … ~all` record, never a second SPF record) and switch on DKIM in hPanel → Emails. Without this, confirmations to visitors land in spam.
+
+   **`.env` for the real domain.** `APP_URL=https://www.clarkescourtrum.com`, `APP_NAME="Clarke's Court"` (the From name on every email) and `MAIL_FROM_ADDRESS` on `@clarkescourtrum.com`, the same mailbox as `MAIL_USERNAME`. On a temporary preview domain, set `APP_URL` to the preview address and `GDL_PREVIEW=true`; mail from `@clarkescourtrum.com` cannot pass SPF there unless the DNS above is done, so use a mailbox on the preview domain for the demo.
 5. **SSH.** Go to hPanel → Advanced → SSH Access, enable it, and note the IP, port (usually `65002`) and username.
 
 ### 2. Connect the private GitHub repository
