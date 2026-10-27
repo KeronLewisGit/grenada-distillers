@@ -1,0 +1,419 @@
+@import 'tailwindcss';
+
+@source '../views';
+@source '../js';
+
+/*
+ * Design tokens, taken from what is in the bottle and the building: molasses (the near-black
+ * brown of the ink and the dark bands), aged oak and cask (browns), cane-paper cream (the label
+ * stock the pages sit on) and one accent, rum amber. Grenada's red, gold and green appear only
+ * in the thin ribbon under the header and on the age check, as on a bottle's neck band.
+ * Amber is a fill (with molasses text, 8:1) and never small text on cream; text-amber is the
+ * darker --accent-text (6:1). Dark mode is re-stepped, not inverted.
+ */
+:root {
+    color-scheme: light;
+    --bg: #f7f1e6;
+    --surface: #fffbf4;
+    --surface-2: #efe5d3;
+    --ink: #1f150d;
+    --ink-2: #4a3a2c;
+    --ink-3: #6b5847;
+    --line: #e2d5bf;
+    --line-strong: #8f7a62; /* form borders: 3:1 against every surface */
+    --link: #8a4a12;
+    --focus: #8a4a12;
+
+    --molasses-950: #120c07;
+    --molasses-900: #1f150d;
+    --molasses-800: #2e2016;
+    --oak: #6e4320;
+    --cask: #a8662c;
+    --accent: #d99a3d;
+    --accent-hover: #e8ad52;
+    --accent-ink: #1f150d;
+    --accent-soft: #f6e6c8;
+    --accent-text: #8a4a12;
+    --primary: #1f150d;
+    --primary-hover: #3a2a1d;
+    --primary-ink: #fffbf4;
+    --gd-red: #ce1126;
+    --gd-gold: #fcd116;
+    --gd-green: #007a5e;
+
+    /* Data and state */
+    --series-1: #2f6fb3;
+    --series-track: #e6edf5;
+    --good: #2f7d32;
+    --attention: #c77700;
+    --critical: #c8322b;
+    --critical-text: #a5221b;
+    --muted-dot: #9b8f82;
+
+    --shadow-sm: 0 1px 2px rgb(31 21 13 / 0.07);
+    --shadow-md: 0 1px 2px rgb(31 21 13 / 0.06), 0 18px 36px -20px rgb(31 21 13 / 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+        color-scheme: dark;
+        --bg: #15100b;
+        --surface: #1e1711;
+        --surface-2: #2a2018;
+        --ink: #f3e9d8;
+        --ink-2: #d9c9b1;
+        --ink-3: #b19d85;
+        --line: #3a2e23;
+        --line-strong: #7f6b56;
+        --link: #f0b65c;
+        --focus: #f0b65c;
+        --accent-soft: #3a2a16;
+        --accent-text: #f0b65c;
+        /* Primary turns cream in dark mode, so amber keeps meaning "the main action". */
+        --primary: #f3e9d8;
+        --primary-hover: #ffffff;
+        --primary-ink: #1f150d;
+        --series-1: #5b9be0;
+        --series-track: #1f2b38;
+        --good: #6cc070;
+        --muted-dot: #7d7166;
+        --critical-text: #ff9a8f;
+        --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+        --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -20px rgb(0 0 0 / 0.75);
+    }
+}
+:root[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #15100b;
+    --surface: #1e1711;
+    --surface-2: #2a2018;
+    --ink: #f3e9d8;
+    --ink-2: #d9c9b1;
+    --ink-3: #b19d85;
+    --line: #3a2e23;
+    --line-strong: #7f6b56;
+    --link: #f0b65c;
+    --focus: #f0b65c;
+    --accent-soft: #3a2a16;
+    --accent-text: #f0b65c;
+    --primary: #f3e9d8;
+    --primary-hover: #ffffff;
+    --primary-ink: #1f150d;
+    --series-1: #5b9be0;
+    --series-track: #1f2b38;
+    --good: #6cc070;
+    --muted-dot: #7d7166;
+    --critical-text: #ff9a8f;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 1px 2px rgb(0 0 0 / 0.4), 0 16px 40px -20px rgb(0 0 0 / 0.75);
+}
+
+@theme inline {
+    --font-sans: var(--ff-sans), ui-sans-serif, system-ui, sans-serif;
+    --font-display: var(--ff-display), Georgia, ui-serif, serif;
+
+    --color-bg: var(--bg);
+    --color-surface: var(--surface);
+    --color-surface-2: var(--surface-2);
+    --color-ink: var(--ink);
+    --color-ink-2: var(--ink-2);
+    --color-ink-3: var(--ink-3);
+    --color-line: var(--line);
+    --color-line-strong: var(--line-strong);
+    --color-link: var(--link);
+    --color-molasses-950: var(--molasses-950);
+    --color-molasses-900: var(--molasses-900);
+    --color-molasses-800: var(--molasses-800);
+    --color-oak: var(--oak);
+    --color-cask: var(--cask);
+    --color-accent: var(--accent);
+    --color-accent-ink: var(--accent-ink);
+    --color-accent-soft: var(--accent-soft);
+    --color-accent-text: var(--accent-text);
+
+    --shadow-sm: var(--shadow-sm);
+    --shadow-md: var(--shadow-md);
+}
+
+/*
+ * Type. DM Serif Display only for h1/h2, the wordmark and proof numerals; Source Sans 3
+ * for everything else. Body 17px / 1.6, reading text capped near 65ch.
+ */
+@layer base {
+    html {
+        -webkit-text-size-adjust: 100%;
+        scroll-padding-top: 6rem;
+    }
+    @media (prefers-reduced-motion: no-preference) {
+        html { scroll-behavior: smooth; }
+    }
+    body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--ff-sans), ui-sans-serif, system-ui, sans-serif;
+        font-size: 1.0625rem;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, .font-display {
+        font-family: var(--ff-display), Georgia, ui-serif, serif;
+        font-weight: 400;
+        text-wrap: balance;
+    }
+    h3, h4 { text-wrap: balance; }
+    p, li { text-wrap: pretty; }
+    a { color: inherit; }
+    :focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 2px;
+        border-radius: 2px;
+    }
+    .js [x-cloak] { display: none !important; }
+    /* Dark bands get an amber ring; amber fills get a molasses one. */
+    :where(header, footer, .on-dark, .bg-molasses-900, .bg-molasses-950) :focus-visible { outline-color: var(--accent); }
+    :where(.bg-accent, .btn-accent) :focus-visible, .btn-accent:focus-visible { outline-color: var(--ink); }
+    :where(header, footer, .on-dark) .btn-accent:focus-visible { outline-color: #fff; }
+}
+
+@layer components {
+    .wrap { width: 100%; max-width: 78rem; margin-inline: auto; padding-inline: 1rem; }
+    @media (min-width: 640px) { .wrap { padding-inline: 1.5rem; } }
+    @media (min-width: 1024px) { .wrap { padding-inline: 2rem; } }
+
+    /* Display sizes. DM Serif Display is tall and narrow, so it can run large. */
+    .display-1 { font-size: clamp(2.6rem, 1.4rem + 5vw, 5.5rem); line-height: 0.98; letter-spacing: -0.015em; }
+    .display-2 { font-size: clamp(2.125rem, 1.4rem + 2.9vw, 3.75rem); line-height: 1.04; letter-spacing: -0.01em; }
+    .display-3 { font-size: clamp(1.6rem, 1.3rem + 1.1vw, 2.25rem); line-height: 1.1; }
+    .lead { font-size: clamp(1.125rem, 1.05rem + 0.4vw, 1.3125rem); line-height: 1.55; max-width: 60ch; }
+    .measure { max-width: 65ch; }
+    .num { font-variant-numeric: tabular-nums; }
+    .kicker { font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
+
+    /*
+     * Cask stamp: section labels stencilled like the mark on a barrel head, a numbered
+     * roundel and a letter-spaced word inside a double rule.
+     */
+    .stamp { display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.85rem 0.3rem 0.3rem; border: 1.5px solid currentColor; border-radius: 999px; outline: 1px solid color-mix(in srgb, currentColor 40%, transparent); outline-offset: 2px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; line-height: 1; color: var(--oak); }
+    .stamp .no { display: inline-grid; place-items: center; min-width: 1.85rem; height: 1.85rem; padding-inline: 0.3rem; border-radius: 999px; background: currentColor; font-family: var(--ff-display), Georgia, serif; font-size: 0.875rem; font-weight: 400; letter-spacing: 0; }
+    .stamp .no > span { color: var(--bg); }
+    :root[data-theme='dark'] .stamp { color: var(--accent-text); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .stamp { color: var(--accent-text); } }
+    .on-dark .stamp, .stamp.on-dark { color: var(--accent); }
+    .on-dark .stamp .no > span { color: var(--molasses-900); }
+
+    /*
+     * Barrel hoops: two iron bands with oak staves between them. Runs along the foot of every
+     * page header and the top of the footer.
+     */
+    .hoops { height: 22px; background:
+        linear-gradient(180deg, #2a1d13 0 4px, #8d6a45 4px 5px, transparent 5px calc(100% - 5px), #8d6a45 calc(100% - 5px) calc(100% - 4px), #2a1d13 calc(100% - 4px)),
+        repeating-linear-gradient(90deg, #7a4a22 0 46px, #5d3818 46px 48px, #8a5a2e 48px 92px, #5d3818 92px 94px);
+    }
+    .hoops-thin { height: 10px; background:
+        linear-gradient(180deg, #2a1d13 0 2px, transparent 2px calc(100% - 2px), #2a1d13 calc(100% - 2px)),
+        repeating-linear-gradient(90deg, #7a4a22 0 46px, #5d3818 46px 48px, #8a5a2e 48px 92px, #5d3818 92px 94px);
+    }
+
+    /* Grenada ribbon: red, gold, green, used thinly and only as a band. */
+    .ribbon { height: 4px; background: linear-gradient(90deg, var(--gd-red) 0 33.3%, var(--gd-gold) 33.3% 66.6%, var(--gd-green) 66.6%); }
+
+    /* Rum label: a double rule with a notched inner frame, like the paper label on a bottle. */
+    .label-frame { position: relative; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; }
+    .label-frame::before { content: ''; position: absolute; inset: 5px; border: 1px solid color-mix(in srgb, var(--line-strong) 70%, transparent); border-radius: 3px; pointer-events: none; }
+    .on-dark .label-frame, .label-frame.on-dark { background: rgb(18 12 7 / 0.72); border-color: rgb(217 154 61 / 0.7); color: #fff; }
+    .on-dark .label-frame::before, .label-frame.on-dark::before { border-color: rgb(217 154 61 / 0.4); }
+
+    /* Proof seal: the ABV in a round medallion. */
+    .seal { display: inline-grid; place-items: center; text-align: center; width: 5.5rem; height: 5.5rem; border-radius: 999px; background: var(--molasses-900); color: #fffbf4; box-shadow: inset 0 0 0 3px var(--molasses-900), inset 0 0 0 4.5px var(--accent), inset 0 0 0 8px var(--molasses-900), inset 0 0 0 9px rgb(217 154 61 / 0.55); }
+    .seal b { display: block; font-family: var(--ff-display), Georgia, serif; font-weight: 400; font-size: 1.85rem; line-height: 1; }
+    .seal small { display: block; margin-top: 0.2rem; font-size: 0.625rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); }
+    .seal.sm { width: 4.25rem; height: 4.25rem; } .seal.sm b { font-size: 1.4rem; }
+    :root[data-theme='dark'] .seal { box-shadow: inset 0 0 0 3px var(--molasses-900), inset 0 0 0 4.5px var(--accent), inset 0 0 0 8px var(--molasses-900), inset 0 0 0 9px rgb(217 154 61 / 0.55), 0 0 0 1px var(--line-strong); }
+
+    /* Ledger: years down the left in the display face, a ruled line per entry (heritage, tours). */
+    .ledger > li { display: grid; grid-template-columns: 6.5rem 1fr; gap: 1.25rem; padding: 1.1rem 0; border-top: 1px solid var(--line); }
+    .ledger > li:last-child { border-bottom: 1px solid var(--line); }
+    .ledger .yr { font-family: var(--ff-display), Georgia, serif; font-size: 1.75rem; line-height: 1; color: var(--accent-text); }
+    @media (max-width: 479px) { .ledger > li { grid-template-columns: 1fr; gap: 0.35rem; } }
+
+    /* Shelf: rum cards stand on a cask-coloured shelf line. */
+    .shelf { border-bottom: 6px solid var(--oak); box-shadow: 0 10px 0 -4px color-mix(in srgb, var(--oak) 45%, transparent); }
+
+    /* Spec sheet: label, dotted leader, value. */
+    .spec { display: grid; gap: 0; }
+    .spec > div { display: flex; align-items: baseline; gap: 0.6rem; padding: 0.55rem 0; border-bottom: 1px solid var(--line); }
+    .spec dt { color: var(--ink-3); flex: 0 1 auto; min-width: 0; }
+    .spec .leader { flex: 1 1 auto; min-width: 1rem; border-bottom: 2px dotted var(--line-strong); transform: translateY(-0.3em); opacity: 0.6; }
+    .spec dd { flex: 0 1 auto; max-width: 62%; font-weight: 600; text-align: right; overflow-wrap: break-word; }
+
+    .prose-copy p + p, .prose-copy ul, .prose-copy ol, .prose-copy p + ul, .prose-copy blockquote { margin-top: 1rem; }
+    .prose-copy h2 { font-size: 1.75rem; margin-top: 2.25rem; margin-bottom: 0.5rem; }
+    .prose-copy h3 { font-size: 1.125rem; font-weight: 700; margin-top: 1.5rem; }
+    .prose-copy ul { list-style: disc; padding-left: 1.25rem; }
+    .prose-copy ol { list-style: decimal; padding-left: 1.25rem; }
+    .prose-copy li + li { margin-top: 0.35rem; }
+    .prose-copy a, .text-link { color: var(--link); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+    .prose-copy a:hover, .text-link:hover { text-decoration-thickness: 2px; }
+    .on-dark .text-link { color: var(--accent); }
+
+    /* Buttons: 48px, square-shouldered like a label, small radius. */
+    .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+        min-height: 3rem; padding: 0.75rem 1.4rem; border-radius: 4px;
+        font-weight: 700; font-size: 1rem; line-height: 1.2; text-align: center; text-decoration: none; letter-spacing: 0.01em;
+        transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn svg { transition: transform 0.15s ease; }
+    .btn:hover svg.nudge { transform: translateX(3px); }
+    .btn-accent { background: var(--accent); color: var(--accent-ink); box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.14); }
+    .btn-accent:hover { background: var(--accent-hover); }
+    .btn-primary { background: var(--primary); color: var(--primary-ink); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-outline { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); background: transparent; }
+    .btn-outline:hover { background: var(--ink); color: var(--bg); }
+    .btn-on-dark { box-shadow: inset 0 0 0 2px rgb(255 255 255 / 0.55); color: #fff; }
+    .btn-on-dark:hover { box-shadow: inset 0 0 0 2px #fff; background: rgb(255 255 255 / 0.08); }
+    .btn-sm { min-height: 2.75rem; padding: 0.5rem 1rem; font-size: 0.9375rem; }
+
+    .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+
+    /* Form fields */
+    .label { display: block; font-weight: 600; margin-bottom: 0.4rem; }
+    .label .opt { font-weight: 400; color: var(--ink-3); }
+    .hint { display: block; font-size: 0.9375rem; color: var(--ink-3); margin-top: 0.35rem; }
+    .input {
+        width: 100%; min-height: 3.125rem; padding: 0.7rem 0.95rem; border-radius: 4px;
+        background: var(--surface); color: var(--ink); border: 1.5px solid var(--line-strong);
+        font-size: 1.0625rem; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .input:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 28%, transparent); }
+    .input[aria-invalid='true'] { border-color: var(--critical); }
+    textarea.input { min-height: 7rem; }
+    select.input { appearance: none; padding-right: 2.5rem; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%236b5847' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.8rem center; }
+    input[type='file'].input { padding: 0.55rem; }
+    input[type='file'].input::file-selector-button { margin-right: 0.85rem; border: 0; border-radius: 3px; padding: 0.6rem 1rem; background: var(--surface-2); color: var(--ink); font-weight: 600; cursor: pointer; }
+    .error { display: flex; gap: 0.35rem; align-items: flex-start; color: var(--critical-text); font-size: 0.9375rem; font-weight: 600; margin-top: 0.4rem; }
+    .fieldset-title { font-family: var(--ff-sans), sans-serif; font-size: 1.125rem; font-weight: 700; display: flex; align-items: center; gap: 0.6rem; }
+    .fieldset-title .step { display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 999px; background: var(--ink); color: var(--bg); font-family: var(--ff-display), Georgia, serif; font-size: 1rem; font-weight: 400; }
+
+    /* Big tappable choice tiles for radios and checkboxes */
+    .choice { position: relative; display: flex; align-items: center; gap: 0.75rem; min-height: 3.25rem; padding: 0.7rem 1rem; border: 1.5px solid var(--line-strong); border-radius: 4px; background: var(--surface); cursor: pointer; transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s; }
+    .choice:hover { border-color: var(--ink); }
+    .choice:has(input:checked) { border-color: var(--ink); background: var(--accent-soft); box-shadow: inset 4px 0 0 var(--accent); }
+    .choice:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+    .choice:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+    .choice input { width: 1.25rem; height: 1.25rem; accent-color: var(--ink); flex: none; }
+    .choice .meta { margin-left: auto; font-size: 0.875rem; color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    /* Tour slot picker: one row per day, a tile per tour time with the places left. */
+    .slot-day + .slot-day { border-top: 1px solid var(--line); }
+    .slot { flex-direction: column; align-items: flex-start; gap: 0.1rem; min-width: 7.5rem; padding: 0.6rem 0.9rem 0.6rem 2.6rem; }
+    .slot input { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); }
+    .slot .t { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .slot .left { font-size: 0.8125rem; color: var(--ink-3); }
+    .slot[data-full='true'] { text-decoration: line-through; text-decoration-color: var(--ink-3); }
+
+    .tag { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.75rem; padding: 0.4rem 1.05rem; border: 1.5px solid var(--line-strong); border-radius: 999px; font-weight: 600; font-size: 0.9375rem; background: var(--surface); }
+    .tag:hover { border-color: var(--ink); }
+    .tag[aria-current='true'], .tag[aria-current='page'] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+    .on-dark .tag { background: transparent; border-color: rgb(255 255 255 / 0.45); color: #fff; }
+    .on-dark .tag:hover { border-color: #fff; }
+
+    /* State chip: a coloured icon plus text, never colour alone */
+    .chip { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0.6rem 0.15rem 0.5rem; border-radius: 999px; font-size: 0.8125rem; font-weight: 600; background: var(--surface-2); color: var(--ink); white-space: nowrap; }
+    .chip svg { width: 0.875rem; height: 0.875rem; flex: none; }
+    .chip[data-tone='good'] svg { color: var(--good); }
+    .chip[data-tone='attention'] svg { color: var(--attention); }
+    .chip[data-tone='critical'] svg { color: var(--critical); }
+    .chip[data-tone='neutral'] svg { color: var(--ink-3); }
+    .chip[data-tone='muted'] { color: var(--ink-2); }
+    .chip[data-tone='muted'] svg { color: var(--muted-dot); }
+
+    /* Bottle shots from the old site sit on white; a fixed paper tile keeps them clean in both themes. */
+    .bottle-tile { background: #f7f1e6; }
+    .bottle-tile .photo-contain img { mix-blend-mode: multiply; }
+    .photo { position: relative; overflow: hidden; background: var(--molasses-800); }
+    .photo img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-contain img { object-fit: contain; }
+    .demo-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.2rem 0.55rem; border-radius: 3px; background: var(--accent-soft); color: var(--accent-text); border: 1px solid color-mix(in srgb, var(--accent-text) 35%, transparent); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+
+    /* Hero scrim: left-weighted on wide screens, bottom-weighted on phones. */
+    .hero-scrim { background: linear-gradient(90deg, rgb(18 12 7 / 0.94) 0%, rgb(18 12 7 / 0.8) 42%, rgb(18 12 7 / 0.35) 80%, rgb(18 12 7 / 0.15) 100%), linear-gradient(0deg, rgb(18 12 7 / 0.7) 0%, transparent 45%); }
+    @media (max-width: 767px) { .hero-scrim { background: linear-gradient(0deg, rgb(18 12 7 / 0.97) 32%, rgb(18 12 7 / 0.75) 70%, rgb(18 12 7 / 0.55) 100%); } }
+    .hero-scrim-center { background: radial-gradient(ellipse at center, rgb(18 12 7 / 0.55) 0%, rgb(18 12 7 / 0.82) 65%, rgb(18 12 7 / 0.92) 100%); }
+
+    .card-link { position: relative; }
+    .card-link a.stretch::after { content: ''; position: absolute; inset: 0; z-index: 1; }
+    .card-link:hover .card-img img { transform: scale(1.03); }
+    .card-img img { transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1); }
+}
+
+/* Motion: reveal on scroll. Off for reduced motion; content is visible without JS. */
+@media (prefers-reduced-motion: no-preference) {
+    .js [data-reveal] { opacity: 0; transform: translateY(16px); transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--reveal-delay, 0ms); }
+    .js [data-reveal].is-visible { opacity: 1; transform: none; }
+    .hero-photo img { animation: hero-settle 1.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+    @keyframes hero-settle { from { transform: scale(1.05); } to { transform: none; } }
+}
+
+@layer components {
+/* ---------- Back office ---------- */
+.admin { --row-y: 0.8rem; font-size: 0.9375rem; line-height: 1.5; }
+.admin :where(h1, h2, h3) { font-family: var(--ff-sans), ui-sans-serif, system-ui, sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+.admin h1.font-display, .admin .font-display { font-family: var(--ff-display), Georgia, serif; font-weight: 400; letter-spacing: 0; }
+.admin[data-density='compact'] { --row-y: 0.4rem; }
+.admin .num { font-variant-numeric: tabular-nums; }
+.admin-nav a { display: flex; align-items: center; gap: 0.75rem; min-height: 2.75rem; padding: 0 0.85rem; border-radius: 6px; color: rgb(255 255 255 / 0.8); font-weight: 600; }
+.admin-nav a:hover { background: rgb(255 255 255 / 0.07); color: #fff; }
+.admin-nav a[aria-current='page'] { background: rgb(255 255 255 / 0.1); color: #fff; box-shadow: inset 3px 0 0 var(--accent); }
+/* Tables scroll inside their own box on phones; the page itself never scrolls sideways. */
+.table-box { overflow-x: auto; max-width: 100%; -webkit-overflow-scrolling: touch; }
+.data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.data-table th { position: sticky; top: 0; background: var(--surface); text-align: left; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.data-table td { padding: var(--row-y) 0.9rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.data-table tbody tr { transition: background-color 0.1s; }
+.data-table tbody tr:hover { background: var(--surface-2); }
+.data-table .r { text-align: right; font-variant-numeric: tabular-nums; }
+.data-table th:first-child, .data-table td:first-child { padding-left: 1.25rem; }
+.data-table th:last-child, .data-table td:last-child { padding-right: 1.25rem; }
+.a-input { min-height: 2.75rem; padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font-size: 0.9375rem; }
+select.a-input { appearance: none; padding-right: 2.25rem; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%236b5847' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.6rem center; }
+.a-input:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 28%, transparent); }
+.a-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; min-height: 2.75rem; padding: 0.5rem 0.95rem; border-radius: 6px; font-weight: 600; font-size: 0.9375rem; }
+.a-btn-primary { background: var(--primary); color: var(--primary-ink); }
+.a-btn-primary:hover { background: var(--primary-hover); }
+.a-btn-accent { background: var(--accent); color: var(--accent-ink); }
+.a-btn-accent:hover { background: var(--accent-hover); }
+.a-btn-ghost { border: 1px solid var(--line-strong); background: var(--surface); }
+.a-btn-ghost:hover { background: var(--surface-2); }
+.a-card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.kbd { font: 600 0.75rem/1 var(--ff-sans), ui-sans-serif; padding: 0.2rem 0.4rem; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 0.35rem; color: var(--ink-3); }
+.cal-day { min-height: 5.5rem; }
+.cal-meter { height: 6px; border-radius: 999px; background: var(--series-track); overflow: hidden; }
+.cal-meter > span { display: block; height: 100%; background: var(--series-1); }
+.cal-meter[data-full='true'] > span { background: var(--attention); }
+.bar { fill: var(--series-1); }
+.bar-track { fill: var(--series-track); }
+}
+
+@media print {
+    .admin aside, .admin header, .no-print { display: none !important; }
+    .admin .lg\:pl-64 { padding-left: 0 !important; }
+}
+
+@media (forced-colors: active) {
+    .chip { border: 1px solid CanvasText; }
+    .bar { fill: CanvasText; }
+    .tag[aria-current='true'], .tag[aria-current='page'] { outline: 2px solid CanvasText; }
+    .seal { border: 2px solid CanvasText; }
+}
+
+/* Theme toggle icon swap */
+.dark-show { display: none; }
+:root[data-theme='dark'] .dark-show { display: block; }
+:root[data-theme='dark'] .dark-hide { display: none; }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) .dark-show { display: block; }
+    :root:not([data-theme='light']) .dark-hide { display: none; }
+}
